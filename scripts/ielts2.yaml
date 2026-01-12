@@ -1,0 +1,400 @@
+Definition_Decrease:
+  type: message
+  parse_mode: HTML
+  text: >
+    💡 <b>Decrease</b>
+
+    <b>Definition</b>: To become smaller in amount, size, intensity, or degree.
+
+    <b>Example</b>: The number of students enrolled in traditional classes has <b>decreased</b> significantly due to the rise of online education.
+
+    <tg-spoiler>
+    <b>Определение</b>: Уменьшаться в количестве, размере, интенсивности или степени.
+
+    <b>Пример</b>: Количество студентов, обучающихся на традиционных курсах, значительно уменьшилось из-за роста онлайн-образования.
+
+    </tg-spoiler>
+  button: Погнали дальше!
+
+Definition_Fall:
+  type: message
+  parse_mode: HTML
+  text: >
+    💡 <b>Fall</b>
+
+    <b>Definition</b>: To decrease or drop in amount, level, or intensity; often used to describe a decline in numerical data.
+
+    <b>Example</b>: The temperature is expected to <b>fall</b> significantly during the night.
+
+    <tg-spoiler>
+    <b>Определение</b>: Уменьшаться или падать в количестве, уровне или интенсивности; часто используется для описания снижения числовых данных.
+
+    <b>Пример</b>: Ожидается, что температура значительно <b>упадет</b> ночью.
+
+    </tg-spoiler>
+  button: Погнали!
+
+Definition_Drop:
+  type: message
+  parse_mode: HTML
+  text: >
+    💡 <b>Drop</b>
+
+    <b>Definition</b>: To fall or decrease suddenly and sharply in amount, level, or intensity.
+
+    <b>Example</b>: The temperature dropped significantly overnight, leading to a chilly morning.
+
+    <tg-spoiler>
+    <b>Определение</b>: Внезапно и резко упасть или уменьшиться в количестве, уровне или интенсивности.
+
+    <b>Пример</b>: Температура резко упала за ночь, что привело к холодному утру.
+
+    </tg-spoiler>
+  button: Погрузимся глубже!
+
+Course_intro_01:
+  type: message
+  parse_mode: HTML
+  text: >
+    💡 <b>Show a downward trend</b>
+
+    <b>Definition</b>: To demonstrate a consistent decrease in data values over a specific period, indicating a decline in the measured variable.
+
+    <b>Example</b>: The graph clearly shows a downward trend in sales over the last three quarters, suggesting a need for strategic changes.
+
+    <tg-spoiler>
+    <b>Определение</b>: Показать постоянное уменьшение значений данных в течение определенного периода, указывая на снижение измеряемой переменной.
+
+    <b>Пример</b>: График четко показывает снижение продаж за последние три квартала, что указывает на необходимость стратегических изменений.
+
+    </tg-spoiler>
+  button: Понял, идем дальше!
+
+Definition_Plummet:
+  type: message
+  parse_mode: HTML
+  text: >
+    💡 <b>Plummet</b>
+
+    <b>Definition</b>: To fall or drop straight down at high speed; in the context of graph descriptions, it refers to a sharp and steep decline in values or quantities.
+
+    <b>Example</b>: The stock market <b>plummeted</b> after the announcement of the economic downturn.
+
+    <tg-spoiler>
+    <b>Определение</b>: Падать или резко опускаться вниз на высокой скорости; в контексте описания графиков это относится к резкому и крутизному снижению значений или количеств.
+
+    <b>Пример</b>: Фондовый рынок <b>резко упал</b> после объявления о экономическом спаде.
+
+    </tg-spoiler>
+  button: Погружаемся в детали!
+
+Course_intro_01:
+  type: message
+  parse_mode: HTML
+  text: >
+    💡 <b>Plunge</b>
+
+    <b>Definition</b>: To drop or fall suddenly and dramatically, often used to describe a sharp decrease in quantity or value in graphs.
+
+    <b>Example</b>: The stock market plunged after the announcement of the economic downturn.
+
+    <tg-spoiler>
+    <b>Определение</b>: Резко упасть или снизиться, часто используется для описания резкого уменьшения количества или стоимости на графиках.
+
+    <b>Пример</b>: Рынок акций резко упал после объявления о экономическом спаде.
+
+    </tg-spoiler>
+  button: Погружаемся!
+
+Definition_Halve:
+  type: message
+  parse_mode: HTML
+  text: >
+    💡 <b>Halve</b>
+
+    <b>Definition</b>: To reduce something by half, or to divide it into two equal parts, often used in the context of numerical data to show a significant decrease.
+
+    <b>Example</b>: The company's profits halved compared to the previous year, indicating a major downturn in sales.
+
+    <tg-spoiler>
+    <b>Определение</b>: Уменьшить что-либо вдвое, или разделить на две равные части, часто используется в контексте числовых данных, чтобы показать значительное снижение.
+
+    <b>Пример</b>: Прибыль компании уменьшилась вдвое по сравнению с предыдущим годом, указывая на серьезное снижение продаж.
+
+    </tg-spoiler>
+  button: Понял, идем дальше!
+
+TrueFalse_Decrease:
+  type: quiz
+  text: The number of students enrolled in online courses remained constant over the past five years according to the graph.
+  media:
+    - https://www.quickchart.io/chart?bkg=white&c=%7B%0A%20%20type%3A%20%27bar%27%2C%0A%20%20data%3A%20%7B%0A%20%20%20%20labels%3A%20%5B%272019%27%2C%20%272020%27%2C%20%272021%27%2C%20%272022%27%2C%20%272023%27%2C%20%272024%27%5D%2C%0A%20%20%20%20datasets%3A%20%5B%7B%0A%20%20%20%20%20%20label%3A%20%27Students%27%2C%0A%20%20%20%20%20%20data%3A%20%5B100%2C%20120%2C%20150%2C%20180%2C%20210%2C%20250%5D%0A%20%20%20%20%7D%5D%0A%20%20%7D%0A%7D
+  answers:
+    - text: 'FALSE'
+      correct: yes
+      feedback: Excellent choice! The data shows a clear increase in student enrollment.
+    - text: 'TRUE'
+      feedback: Close, but not accurate. The graph indicates a rise in enrollment over the years.
+
+TrueFalse_Fall:
+  type: quiz
+  text: The graph indicates that the average temperatures are highest in the winter months.
+  media:
+    - https://www.quickchart.io/chart?bkg=white&c=%7B%0A%20%20type%3A%20%27bar%27%2C%0A%20%20data%3A%20%7B%0A%20%20%20%20labels%3A%20%5B%27January%27%2C%20%27February%27%2C%20%27March%27%2C%20%27April%27%2C%20%27May%27%2C%20%27June%27%2C%20%27July%27%2C%20%27August%27%2C%20%27September%27%2C%20%27October%27%2C%20%27November%27%2C%20%27December%27%5D%2C%0A%20%20%20%20datasets%3A%20%5B%7B%0A%20%20%20%20%20%20label%3A%20%27Average%20Temperature%20(°C)%27%2C%0A%20%20%20%20%20%20data%3A%20%5B5%2C%202%2C%2010%2C%2015%2C%2020%2C%2025%2C%2028%2C%2027%2C%2022%2C%2015%2C%209%2C%205%5D%0A%20%20%20%20%7D%5D%0A%20%20%7D%0A%7D
+  answers:
+    - text: 'FALSE'
+      correct: yes
+      feedback: Excellent! You’ve understood the seasonal temperature patterns.
+    - text: 'TRUE'
+      feedback: Not quite right. Remember, winter months typically show lower temperatures.
+
+TrueFalse_Drop:
+  type: quiz
+  text: The temperature remained consistent throughout the week, with no significant drops according to the graph.
+  media:
+    - https://www.quickchart.io/chart?bkg=white&c=%7B%0A%20%20type%3A%20%27bar%27%2C%0A%20%20data%3A%20%7B%0A%20%20%20%20labels%3A%20%5B%27Monday%27%2C%20%27Tuesday%27%2C%20%27Wednesday%27%2C%20%27Thursday%27%2C%20%27Friday%27%2C%20%27Saturday%27%2C%20%27Sunday%27%5D%2C%0A%20%20%20%20datasets%3A%20%5B%7B%0A%20%20%20%20%20%20label%3A%20%27Temperature%20(Celsius)%27%2C%0A%20%20%20%20%20%20data%3A%20%5B20%2C%2075%2C%2020%2C%2025%2C%2025%2C%2025%2C%2025%5D%0A%20%20%20%20%7D%5D%0A%20%20%7D%0A%7D
+  answers:
+    - text: 'FALSE'
+      correct: yes
+      feedback: Excellent observation! The graph clearly shows significant fluctuations.
+    - text: 'TRUE'
+      feedback: That's not quite right. Take a closer look at the temperature changes throughout the week.
+
+TrueFalse_Show_a_downward_trend:
+  type: quiz
+  text: The graph indicates a consistent increase in sales over the last three quarters.
+  media:
+    - https://www.quickchart.io/chart?c=%7B%0A%20%20type%3A%20%27line%27%2C%0A%20%20data%3A%20%7B%0A%20%20%20%20labels%3A%20%5B%27Q1%27%2C%20%27Q2%27%2C%20%27Q3%27%2C%20%27Q4%27%5D%2C%0A%20%20%20%20datasets%3A%20%5B%0A%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20label%3A%20%27Sales%20Figures%20(%27%20%2B%20%27Thousands%27%20%2B%20%27)%27%2C%0A%20%20%20%20%20%20%20%20backgroundColor%3A%20%27rgb(255%2C%2099%2C%20132)%27%2C%0A%20%20%20%20%20%20%20%20borderColor%3A%20%27rgb(255%2C%2099%2C%20132)%27%2C%0A%20%20%20%20%20%20%20%20data%3A%20%5B200%2C%20150%2C%20100%2C%2075%5D%2C%0A%20%20%20%20%20%20%20%20fill%3A%20false%2C%0A%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%5D%2C%0A%20%20%7D%2C%0A%20%20options%3A%20%7B%0A%20%20%20%20title%3A%20%7B%0A%20%20%20%20%20%20display%3A%20true%2C%0A%20%20%20%20%20%20text%3A%20%27Sales%20Figures%20Over%20Quarters%27%2C%0A%20%20%20%20%7D%2C%0A%20%20%7D%2C%0A%7D
+  answers:
+    - text: 'FALSE'
+      correct: yes
+      feedback: Great job! You correctly identified the downward trend in sales.
+    - text: 'TRUE'
+      feedback: That's not correct. The data shows a decline, not an increase. Keep trying!
+
+TrueFalse_Plummet:
+  type: quiz
+  text: The stock market values increased steadily over several months according to the graph.
+  media:
+    - https://www.quickchart.io/chart?c=%7B%0A%20%20type%3A%20%27line%27%2C%0A%20%20data%3A%20%7B%0A%20%20%20%20labels%3A%20%5B%27January%27%2C%20%27February%27%2C%20%27March%27%2C%20%27April%27%2C%20%27May%27%2C%20%27June%27%2C%20%27July%27%2C%20%27August%27%2C%20%27September%27%2C%20%27October%27%2C%20%27November%27%2C%20%27December%27%5D%2C%0A%20%20%20%20datasets%3A%20%5B%0A%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20label%3A%20%27Stock%20Prices%27%2C%0A%20%20%20%20%20%20%20%20backgroundColor%3A%20%27rgb(255%2C%2099%2C%20132)%27%2C%0A%20%20%20%20%20%20%20%20borderColor%3A%20%27rgb(255%2C%2099%2C%20132)%27%2C%0A%20%20%20%20%20%20%20%20data%3A%20%5B100%2C%2080%2C%2060%2C%2040%2C%2020%2C%2010%2C%202%2C%200%2C%200%2C%200%2C%200%2C%200%5D%2C%0A%20%20%20%20%20%20%20%20fill%3A%20false%2C%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%5D%2C%0A%20%20%7D%2C%0A%20%20options%3A%20%7B%0A%20%20%20%20title%3A%20%7B%0A%20%20%20%20%20%20display%3A%20true%2C%0A%20%20%20%20%20%20text%3A%20%27Stock%20Market%20Values%20Over%20Several%20Months%27%2C%0A%20%20%20%20%7D%2C%0A%20%20%7D%2C%0A%7D%0A
+  answers:
+    - text: 'FALSE'
+      correct: yes
+      feedback: Excellent job! You correctly identified the trend.
+    - text: 'TRUE'
+      feedback: That's not correct. The graph shows a significant decline in stock market values.
+
+TrueFalse_Plunge:
+  type: quiz
+  text: The stock market showed a gradual decline over several months according to the graph.
+  media:
+    - https://www.quickchart.io/chart?c=%7B%0A%20%20type%3A%20%27line%27%2C%0A%20%20data%3A%20%7B%0A%20%20%20%20labels%3A%20%5B%27Month%201%27%2C%20%27Month%202%27%2C%20%27Month%203%27%2C%20%27Month%204%27%2C%20%27Month%205%27%2C%20%27Month%206%27%2C%20%27Month%207%27%5D%2C%0A%20%20%20%20datasets%3A%20%5B%0A%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20label%3A%20%27Stock%20Index%27%2C%0A%20%20%20%20%20%20%20%20backgroundColor%3A%20%27rgb(255%2C%2099%2C%20132)%27%2C%0A%20%20%20%20%20%20%20%20borderColor%3A%20%27rgb(255%2C%2099%2C%20132)%27%2C%0A%20%20%20%20%20%20%20%20data%3A%20%5B200%2C%20200%2C%20200%2C%20200%2C%20150%2C%20100%2C%2050%5D%2C%0A%20%20%20%20%20%20%20%20fill%3A%20false%2C%0A%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%5D%2C%0A%20%20%7D%2C%0A%20%20options%3A%20%7B%0A%20%20%20%20title%3A%20%7B%0A%20%20%20%20%20%20display%3A%20true%2C%0A%20%20%20%20%20%20text%3A%20%27Stock%20Market%20Performance%27%2C%0A%20%20%20%20%7D%2C%0A%20%20%7D%2C%0A%7D
+  answers:
+    - text: 'FALSE'
+      correct: yes
+      feedback: Excellent job! You correctly identified the nature of the stock market changes.
+    - text: 'TRUE'
+      feedback: That's not quite right. The graph shows a sharp drop rather than a gradual decline.
+
+TrueFalse_Halve:
+  type: quiz
+  text: The company's profits increased by 50% compared to the previous year according to the graph.
+  media:
+    - https://www.quickchart.io/chart?bkg=white&c=%7B%0A%20%20type%3A%20%27bar%27%2C%0A%20%20data%3A%20%7B%0A%20%20%20%20labels%3A%20%5B%27Year%201%27%2C%20%27Year%202%27%5D%2C%0A%20%20%20%20datasets%3A%20%5B%7B%0A%20%20%20%20%20%20label%3A%20%27Profits%20(in%20thousands)%27%2C%0A%20%20%20%20%20%20data%3A%20%5B200%2C%20100%5D%0A%20%20%20%20%7D%5D%0A%20%20%7D%0A%7D
+  answers:
+    - text: 'FALSE'
+      correct: yes
+      feedback: Excellent choice! You've understood the graph correctly.
+    - text: 'TRUE'
+      feedback: That's a common misconception, but the graph shows a significant decrease in profits.
+
+Synonims_Decrease:
+  type: quiz
+  text: Decrease
+  answers:
+    - text: to diminish in size or amount
+      correct: yes
+      feedback: Wonderful! You've nailed it! That's exactly what it means.
+    - text: to increase in number
+      feedback: Not quite! Remember, ""decrease"" means the opposite of increasing.
+    - text: to reduce or lessen
+      correct: yes
+      feedback: Awesome! You've got the hang of it! Keep it up!
+
+Matching_Synonims_Fall:
+  type: quiz
+  text: Fall
+  answers:
+    - text: to decrease in number
+      feedback: Nice try! But that’s not the best match for ""fall.""
+    - text: to drop suddenly
+      correct: yes
+      feedback: Awesome! You nailed it! ""Fall"" often implies a sudden drop.
+    - text: to remain constant
+      feedback: Close, but not quite! ""Fall"" suggests a change, not stability.
+
+Matching_Synonims_Drop:
+  type: quiz
+  text: Drop
+  answers:
+    - text: to fall suddenly
+      correct: yes
+      feedback: Fantastic! You nailed the meaning perfectly!
+    - text: to remain stable
+      feedback: Not quite right! Think about what happens when something drops.
+    - text: to decrease gradually
+      feedback: Close, but not exactly! A drop usually implies a more sudden change.
+
+Matching_Show_a_downward_trend:
+  type: quiz
+  text: Show a downward trend
+  answers:
+    - text: to illustrate a decrease
+      correct: yes
+      feedback: Fantastic! You've nailed it! This perfectly captures the concept.
+    - text: to demonstrate stability
+      feedback: Not quite right! Stability is more about staying the same.
+    - text: to indicate an upward movement
+      feedback: Close, but not quite! Remember, upward movement means an increase, not a decrease.
+
+Matching_Plummet:
+  type: quiz
+  text: Plummet
+  answers:
+    - text: to fall sharply
+      correct: yes
+      feedback: Well done! You've pinpointed the sudden drop perfectly!
+    - text: to rise steadily
+      feedback: Not quite! Think about the opposite of rising here.
+    - text: to fluctuate
+      feedback: Close, but not exactly! Remember, plummet suggests a strong downward movement.
+
+Matching_Plunge:
+  type: quiz
+  text: Plunge
+  answers:
+    - text: to dive or fall suddenly
+      correct: yes
+      feedback: Nicely done! You've captured the essence of ""plunge"" perfectly!
+    - text: to rise steadily
+      feedback: Close, but not quite! Think about the opposite of rising.
+    - text: to remain unchanged
+      feedback: Good effort, but that's not the right match. Keep trying!
+
+Matching_Halve:
+  type: quiz
+  text: Halve
+  answers:
+    - text: to reduce to half
+      correct: yes
+      feedback: Fantastic! You've nailed the meaning perfectly!
+    - text: to double
+      feedback: Close, but not quite! Think about what happens when you halve something.
+    - text: to divide into two equal parts
+      correct: yes
+      feedback: Excellent choice! You're really getting the hang of these synonyms!
+
+Quiz_Decrease:
+  type: quiz
+  media:
+    - https://www.quickchart.io/chart?c=%7B%0A%20%20type%3A%20%27line%27%2C%0A%20%20data%3A%20%7B%0A%20%20%20%20labels%3A%20%5B%272018%27%2C%20%272019%27%2C%20%272020%27%2C%20%272021%27%2C%20%272022%27%5D%2C%0A%20%20%20%20datasets%3A%20%5B%0A%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20label%3A%20%27Museum%20Visitors%27%2C%0A%20%20%20%20%20%20%20%20backgroundColor%3A%20%27rgb(255%2C%2099%2C%20132)%27%2C%0A%20%20%20%20%20%20%20%20borderColor%3A%20%27rgb(255%2C%2099%2C%20132)%27%2C%0A%20%20%20%20%20%20%20%20data%3A%20%5B1000%2C%20900%2C%20800%2C%20700%2C%20600%5D%2C%0A%20%20%20%20%20%20%20%20fill%3A%20false%2C%0A%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20label%3A%20%27Concert%20Hall%20Attendance%27%2C%0A%20%20%20%20%20%20%20%20fill%3A%20false%2C%0A%20%20%20%20%20%20%20%20backgroundColor%3A%20%27rgb(54%2C%20162%2C%20235)%27%2C%0A%20%20%20%20%20%20%20%20borderColor%3A%20%27rgb(54%2C%20162%2C%20235)%27%2C%0A%20%20%20%20%20%20%20%20data%3A%20%5B600%2C%20700%2C%20850%2C%20900%2C%201000%5D%2C%0A%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%5D%2C%0A%20%20%7D%2C%0A%20%20options%3A%20%7B%0A%20%20%20%20title%3A%20%7B%0A%20%20%20%20%20%20display%3A%20true%2C%0A%20%20%20%20%20%20text%3A%20%27Museum%20and%20Concert%20Hall%20Attendance%20(2018-2022)%27%2C%0A%20%20%20%20%7D%2C%0A%20%20%7D%2C%0A%7D%0A
+  text: >
+    The number of visitors to the museum ______ significantly over the past five years, while the attendance at the concert hall ______ during the same time frame.
+  answers:
+    - text: fell/declined
+      feedback: Not quite! Try thinking about the direction of the trends again.
+    - text: decreased/increased
+      correct: yes
+      feedback: Awesome! You nailed the comparison perfectly!
+    - text: dropped/grew
+      feedback: Close, but not the precise terms we are looking for. Keep at it!
+
+GapFill_Fall:
+  type: quiz
+  media:
+    - https://www.quickchart.io/chart?c=%7B%0A%20%20type%3A%20%27line%27%2C%0A%20%20data%3A%20%7B%0A%20%20%20%20labels%3A%20%5B%272018%27%2C%20%272019%27%2C%20%272020%27%5D%2C%0A%20%20%20%20datasets%3A%20%5B%0A%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20label%3A%20%27Museum%20Attendance%27%2C%0A%20%20%20%20%20%20%20%20backgroundColor%3A%20%27rgb(255%2C%2099%2C%20132)%27%2C%0A%20%20%20%20%20%20%20%20borderColor%3A%20%27rgb(255%2C%2099%2C%20132)%27%2C%0A%20%20%20%20%20%20%20%20data%3A%20%5B200%2C%20200%2C%20100%5D%2C%0A%20%20%20%20%20%20%20%20fill%3A%20false%2C%0A%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20label%3A%20%27Art%20Gallery%20Attendance%27%2C%0A%20%20%20%20%20%20%20%20fill%3A%20false%2C%0A%20%20%20%20%20%20%20%20backgroundColor%3A%20%27rgb(54%2C%20162%2C%20235)%27%2C%0A%20%20%20%20%20%20%20%20borderColor%3A%20%27rgb(54%2C%20162%2C%20235)%27%2C%0A%20%20%20%20%20%20%20%20data%3A%20%5B150%2C%20200%2C%20250%5D%2C%0A%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%5D%2C%0A%20%20%7D%2C%0A%20%20options%3A%20%7B%0A%20%20%20%20title%3A%20%7B%0A%20%20%20%20%20%20display%3A%20true%2C%0A%20%20%20%20%20%20text%3A%20%27Tourist%20Attendance%20Comparison%27%2C%0A%20%20%20%20%7D%2C%0A%20%20%7D%2C%0A%7D%0A
+  text: >
+    The number of tourists visiting the museum ______ significantly in 2020, while attendance at the art gallery ______ during the same period.
+  answers:
+    - text: fell/increased
+      correct: yes
+      feedback: Well done! You've accurately captured the trends in attendance.
+    - text: decreased/rose
+      feedback: Close, but not quite right! Think about the direction of the trends again.
+    - text: dropped/gained
+      feedback: Almost there! Remember the specific terms we discussed for these trends.
+
+GapFill_Drop:
+  type: quiz
+  media:
+    - https://www.quickchart.io/chart?c=%7B%0A%20%20type%3A%20%27line%27%2C%0A%20%20data%3A%20%7B%0A%20%20%20%20labels%3A%20%5B%27January%27%2C%20%27February%27%2C%20%27March%27%2C%20%27April%27%2C%20%27May%27%2C%20%27June%27%2C%20%27July%27%2C%20%27August%27%2C%20%27September%27%2C%20%27October%27%2C%20%27November%27%2C%20%27December%27%5D%2C%0A%20%20%20%20datasets%3A%20%5B%0A%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20label%3A%20%27Number%20of%20Visitors%27%2C%0A%20%20%20%20%20%20%20%20backgroundColor%3A%20%27rgb(54%2C%20162%2C%20235)%27%2C%0A%20%20%20%20%20%20%20%20borderColor%3A%20%27rgb(54%2C%20162%2C%20235)%27%2C%0A%20%20%20%20%20%20%20%20data%3A%20%5B150%2C%20120%2C%20150%2C%20200%2C%20250%2C%20300%2C%20350%2C%20300%2C%20200%2C%20150%2C%20100%2C%2050%5D%2C%0A%20%20%20%20%20%20%20%20fill%3A%20false%2C%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%5D%2C%0A%20%20%7D%2C%0A%20%20options%3A%20%7B%0A%20%20%20%20title%3A%20%7B%0A%20%20%20%20%20%20display%3A%20true%2C%0A%20%20%20%20%20%20text%3A%20%27Number%20of%20Visitors%20to%20the%20Museum%20Over%20the%20Year%27%2C%0A%20%20%20%20%7D%2C%0A%20%20%7D%2C%0A%7D%0A
+  text: >
+    The number of visitors to the museum ______ significantly in the summer months, but it ______ sharply in the winter.
+  answers:
+    - text: dropped/increased
+      correct: yes
+      feedback: Excellent choice! You captured the seasonal trend perfectly.
+    - text: fell/rise
+      feedback: That's a good try, but the verbs don't match the trends shown in the graph.
+    - text: declined/grown
+      feedback: Not quite! While you’re in the right ballpark, these words don’t reflect the changes accurately.
+
+GapFill_Show_a_downward_trend:
+  type: quiz
+  media:
+    - https://www.quickchart.io/chart?c=%7B%0A%20%20type%3A%20%27line%27%2C%0A%20%20data%3A%20%7B%0A%20%20%20%20labels%3A%20%5B%272019%27%2C%20%272020%27%2C%20%272021%27%2C%20%272022%27%2C%20%272023%27%5D%2C%0A%20%20%20%20datasets%3A%20%5B%0A%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20label%3A%20%27Number%20of%20Visitors%27%2C%0A%20%20%20%20%20%20%20%20backgroundColor%3A%20%27rgb(255%2C%2099%2C%20132)%27%2C%0A%20%20%20%20%20%20%20%20borderColor%3A%20%27rgb(255%2C%2099%2C%20132)%27%2C%0A%20%20%20%20%20%20%20%20data%3A%20%5B5000%2C%204500%2C%204000%2C%203500%2C%203000%5D%2C%0A%20%20%20%20%20%20%20%20fill%3A%20false%2C%0A%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%5D%2C%0A%20%20%7D%2C%0A%20%20options%3A%20%7B%0A%20%20%20%20title%3A%20%7B%0A%20%20%20%20%20%20display%3A%20true%2C%0A%20%20%20%20%20%20text%3A%20%27Museum%20Visitors%20Over%20the%20Years%27%2C%0A%20%20%20%20%7D%2C%0A%20%20%7D%2C%0A%7D
+  text: >
+    The number of visitors to the museum __________ significantly over the past five years, indicating a decline in interest.
+  answers:
+    - text: increased
+      feedback: That's an interesting perspective, but it doesn't match the trend shown in the graph.
+    - text: decreased
+      correct: yes
+      feedback: Excellent! You've accurately observed the downward trend in visitor numbers.
+    - text: fluctuated
+      feedback: Close, but it seems the overall trend is toward a decrease rather than fluctuations.
+
+GapFill_Plummet:
+  type: quiz
+  media:
+    - https://www.quickchart.io/chart?c=%7B%0A%20%20type%3A%20%27line%27%2C%0A%20%20data%3A%20%7B%0A%20%20%20%20labels%3A%20%5B%272018%27%2C%20%272019%27%2C%20%272020%27%5D%2C%0A%20%20%20%20datasets%3A%20%5B%0A%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20label%3A%20%27Tourists%27%2C%0A%20%20%20%20%20%20%20%20backgroundColor%3A%20%27rgb(255%2C%2099%2C%20132)%27%2C%0A%20%20%20%20%20%20%20%20borderColor%3A%20%27rgb(255%2C%2099%2C%20132)%27%2C%0A%20%20%20%20%20%20%20%20data%3A%20%5B5000%2C%202000%2C%201000%5D%2C%0A%20%20%20%20%20%20%20%20fill%3A%20false%2C%0A%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20label%3A%20%27Local%20Visitors%27%2C%0A%20%20%20%20%20%20%20%20fill%3A%20false%2C%0A%20%20%20%20%20%20%20%20backgroundColor%3A%20%27rgb(54%2C%20162%2C%20235)%27%2C%0A%20%20%20%20%20%20%20%20borderColor%3A%20%27rgb(54%2C%20162%2C%20235)%27%2C%0A%20%20%20%20%20%20%20%20data%3A%20%5B3000%2C%203200%2C%203500%5D%2C%0A%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%5D%2C%0A%20%20%7D%2C%0A%20%20options%3A%20%7B%0A%20%20%20%20title%3A%20%7B%0A%20%20%20%20%20%20display%3A%20true%2C%0A%20%20%20%20%20%20text%3A%20%27Number%20of%20Visitors%20to%20the%20City%27%2C%0A%20%20%20%20%7D%2C%0A%20%20%20%20scales%3A%20%7B%0A%20%20%20%20%20%20y%3A%20%7B%0A%20%20%20%20%20%20%20%20title%3A%20%27Number%20of%20Visitors%27%0A%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20x%3A%20%7B%0A%20%20%20%20%20%20%20%20title%3A%20%27Year%27%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20%7D%2C%0A%7D%0A
+  text: >
+    The number of tourists visiting the city ______ dramatically in 2020, while the number of local visitors ______ slightly during the same year.
+  answers:
+    - text: plummeted/increased
+      correct: yes
+      feedback: Fantastic! You've perfectly captured the contrasting trends in the data.
+    - text: fell/decreased
+      feedback: Almost there! But remember that the local visitors showed a different trend.
+    - text: dropped/rise
+      feedback: Close, but not quite! Think about the specific changes in visitor numbers.
+
+GapFill_Plunge:
+  type: quiz
+  media:
+    - https://www.quickchart.io/chart?c=%7B%0A%20%20type%3A%20%27line%27%2C%0A%20%20data%3A%20%7B%0A%20%20%20%20labels%3A%20%5B%272018%27%2C%20%272019%27%2C%20%272020%27%2C%20%272021%27%5D%2C%0A%20%20%20%20datasets%3A%20%5B%0A%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20label%3A%20%27Tourists%27%2C%0A%20%20%20%20%20%20%20%20backgroundColor%3A%20%27rgb(255%2C%2099%2C%20132)%27%2C%0A%20%20%20%20%20%20%20%20borderColor%3A%20%27rgb(255%2C%2099%2C%20132)%27%2C%0A%20%20%20%20%20%20%20%20data%3A%20%5B1000%2C%201200%2C%20500%2C%20600%5D%2C%0A%20%20%20%20%20%20%20%20fill%3A%20false%2C%0A%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20label%3A%20%27Local%20Visitors%27%2C%0A%20%20%20%20%20%20%20%20fill%3A%20false%2C%0A%20%20%20%20%20%20%20%20backgroundColor%3A%20%27rgb(54%2C%20162%2C%20235)%27%2C%0A%20%20%20%20%20%20%20%20borderColor%3A%20%27rgb(54%2C%20162%2C%20235)%27%2C%0A%20%20%20%20%20%20%20%20data%3A%20%5B800%2C%20900%2C%20950%2C%201000%5D%2C%0A%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%5D%2C%0A%20%20%7D%2C%0A%20%20options%3A%20%7B%0A%20%20%20%20title%3A%20%7B%0A%20%20%20%20%20%20display%3A%20true%2C%0A%20%20%20%20%20%20text%3A%20%27Tourists%20vs%20Local%20Visitors%20(2018-2021)%27%2C%0A%20%20%20%20%7D%2C%0A%20%20%7D%2C%0A%7D
+  text: >
+    The number of tourists visiting the city ____ dramatically in 2020 due to the pandemic, while the number of local visitors ____ slightly during the same time.
+  answers:
+    - text: plunged/increased
+      correct: yes
+      feedback: Awesome! You nailed the trends perfectly!
+    - text: fell/decreased
+      feedback: Close, but not quite right! Think about the impact of the pandemic.
+    - text: dropped/rose
+      feedback: Nice try! However, the specific words you need are a bit stronger.
+
+GapFill_Halve:
+  type: quiz
+  media:
+    - https://www.quickchart.io/chart?c=%7B%0A%20%20type%3A%20%27line%27%2C%0A%20%20data%3A%20%7B%0A%20%20%20%20labels%3A%20%5B%272018%27%2C%20%272019%27%2C%20%272020%27%5D%2C%0A%20%20%20%20datasets%3A%20%5B%0A%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20label%3A%20%27Country%20A%27%2C%0A%20%20%20%20%20%20%20%20backgroundColor%3A%20%27rgb(255%2C%2099%2C%20132)%27%2C%0A%20%20%20%20%20%20%20%20borderColor%3A%20%27rgb(255%2C%2099%2C%20132)%27%2C%0A%20%20%20%20%20%20%20%20data%3A%20%5B200%2C%20100%2C%2050%5D%2C%0A%20%20%20%20%20%20%20%20fill%3A%20false%2C%0A%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20label%3A%20%27Country%20B%27%2C%0A%20%20%20%20%20%20%20%20fill%3A%20false%2C%0A%20%20%20%20%20%20%20%20backgroundColor%3A%20%27rgb(54%2C%20162%2C%20235)%27%2C%0A%20%20%20%20%20%20%20%20borderColor%3A%20%27rgb(54%2C%20162%2C%20235)%27%2C%0A%20%20%20%20%20%20%20%20data%3A%20%5B150%2C%20200%2C%20250%5D%2C%0A%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%5D%2C%0A%20%20%7D%2C%0A%20%20options%3A%20%7B%0A%20%20%20%20title%3A%20%7B%0A%20%20%20%20%20%20display%3A%20true%2C%0A%20%20%20%20%20%20text%3A%20%27Solar%20Energy%20Production%20in%20Country%20A%20and%20Country%20B%20(2018-2020)%27%2C%0A%20%20%20%20%7D%2C%0A%20%20%7D%2C%0A%7D
+  text: >
+    The production of solar energy in Country A ______ in 2020 compared to 2019, while the production in Country B ______ over the same period.
+  answers:
+    - text: halved/increased
+      correct: yes
+      feedback: Fantastic! You've accurately captured the trends in the data.
+    - text: rose/fell
+      feedback: Close, but not quite right. Pay attention to the changes in production!
+    - text: decreased/increased
+      feedback: Almost there! Remember the specific trends for each country in 2020.

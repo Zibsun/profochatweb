@@ -1,0 +1,883 @@
+GraphicMsg1_1:
+  type: message
+  text: |
+    Посмотри на график и подумай, какое предложение подходит
+  media:
+    - https://drive.google.com/file/d/10Rcw2JK6mBzDPBuvuZ1Km_j6nzC3oILU/view?usp=drive_link
+
+GraphicQuiz1_2:
+  type: quiz
+  text: Выберите правильный ответ, который описывает график (7/8)
+  answers:
+    - text: The figures soared to 89% in the final year.
+      feedback: I see where you’re coming from, but that's not quite it.
+    - text: The prices rocketed in 2009.
+      correct: yes
+      feedback: You're on the right track!
+
+GraphicMsg1_1:
+  type: message
+  text: |
+    Посмотри на график и подумай, какое предложение подходит
+
+GraphicQuiz_1:
+  type: quiz
+  text: Выберите правильный ответ, который описывает график (7/8)
+  media:
+    - https://drive.google.com/file/d/10Rcw2JK6mBzDPBuvuZ1Km_j6nzC3oILU/view?usp=drive_link
+  answers:
+    - text: The figures soared to 89% in the final year.
+      feedback: I see where you’re coming from, but that's not quite it.
+    - text: The prices rocketed in 2009.
+      correct: yes
+      feedback: You're on the right track!
+
+Course_intro_00:
+  type: message
+  text: >
+    Привет! Рад тебя видеть! Я — 🤖 IELTS Bot! Этот курс поможет тебе
+    подготовиться к IELTS и успешно его сдать.
+
+Course_intro_01:
+  type: message
+  text: >
+    Давай проверим IELTS Vocabulary words, которые ты должен знать, если
+    хочешь успешно сдать экзамен!
+  button: Давай
+
+Vocab_1:
+  type: quiz
+  text: Important (1/50)
+  answers:
+    - text: Essential
+      correct: yes
+      feedback: Awesome job!
+    - text: Viral
+      feedback: Almost there, let's try again!
+
+Vocab_2:
+  type: quiz
+  text: Expand (2/50)
+  answers:
+    - text: Enlarge
+      correct: yes
+      feedback: Fantastic work!
+    - text: Construct
+      feedback: Not quite, but you’re on the right track.
+
+Vocab_3:
+  type: quiz
+  text: I think (3/50)
+  answers:
+    - text: I reckon
+      correct: yes
+      feedback: Keep it up!
+    - text: I adore
+      feedback: Close, but let’s give it another shot.
+
+
+Score_01:
+  type: test
+  prefix: Vocab_
+  text: |
+    У вас {score} правильных ответов из {maxscore}!
+  score:
+    0: Отличный результат!
+    10: Ты молодец! Почти все запомнил. Так держать!
+    40: Очень хороший результат! В следующий раз будет еще лучше!
+    100: Что-то пошло не так!
+  button: ок!
+
+Jumper_01:
+  type: jump
+  text: Отлично! Хотите еще 10 слов?
+  options:
+    - text: Мне пока хватит
+      goto: Course_intro_02
+    - text: Хочу еще!
+
+Vocab_11:
+  type: quiz
+  text: People (11/50)
+  answers:
+    - text: Citizens
+      correct: yes
+      feedback: Impressive!
+    - text: Beings
+      feedback: Almost there, let's try again!
+
+Vocab_12:
+  type: quiz
+  text: Go up (12/50)
+  answers:
+    - text: Decrease
+      feedback: Not quite, but you’re on the right track.
+    - text: Grow
+      correct: yes
+      feedback: You're a rockstar!
+
+Vocab_13:
+  type: quiz
+  text: Fat (13/50)
+  answers:
+    - text: Outweigh
+      feedback: Close, but let’s give it another shot.
+    - text: Obese
+      correct: yes
+      feedback: Outstanding performance!
+
+Vocab_14:
+  type: quiz
+  text: Good (14/50)
+  answers:
+    - text: Hostile
+      feedback: That’s an interesting attempt, but not the right answer.
+    - text: Beneficial
+      correct: yes
+      feedback: Brilliant!
+
+Vocab_15:
+  type: quiz
+  text: Bad (15/50)
+  answers:
+    - text: Negative
+      correct: yes
+      feedback: You're nailing it!
+    - text: Silly
+      feedback: Good effort, but let’s rethink that.
+
+Vocab_16:
+  type: quiz
+  text: Big (16/50)
+  answers:
+    - text: Minute
+      feedback: Not exactly, how about we try a different approach?
+    - text: Spacious
+      correct: yes
+      feedback: Awesome job!
+
+Vocab_17:
+  type: quiz
+  text: Thing (17/50)
+  answers:
+    - text: Concept
+      feedback: I see where you’re coming from, but that's not quite it.
+    - text: Item
+      correct: yes
+      feedback: Fantastic work!
+
+Vocab_18:
+  type: quiz
+  text: But (18/50)
+  answers:
+    - text: Additionally
+      feedback: Nice try, but let's keep working on it.
+    - text: By contrast,
+      correct: yes
+      feedback: Keep it up!
+
+Vocab_19:
+  type: quiz
+  text: Kids (19/50)
+  answers:
+    - text: Seniors
+      feedback: That's a good start, but let's refine it a bit.
+    - text: Youngsters
+      correct: yes
+      feedback: You're doing amazing!
+
+Vocab_20:
+  type: quiz
+  text: Food (20/50)
+  answers:
+    - text: Cuisine
+      correct: yes
+      feedback: Excellent effort!
+    - text: Apparel
+      feedback: A solid attempt, but not the correct answer.
+
+Score_02:
+  type: test
+  prefix: Vocab_
+  text: |
+    У вас пока {score} правильных ответов из {maxscore}!
+  score:
+    0: Отличный результат!
+    10: Ты молодец! Почти все запомнил. Так держать!
+    40: Очень хороший результат! В следующий раз будет еще лучше!
+    100: Что-то пошло не так!
+  button: Супер
+
+Jumper_02:
+  type: jump
+  text: Неплохо двигаемся! Может еще 10 слов?
+  options:
+    - text: Достаточно
+      goto: Course_intro_02
+    - text: Да!
+
+
+Vocab_21:
+  type: quiz
+  text: And (21/50)
+  answers:
+    - text: In addition,
+      correct: yes
+      feedback: Way to go!
+    - text: However
+      feedback: Almost there, let's try again!
+
+Vocab_22:
+  type: quiz
+  text: So (22/50)
+  answers:
+    - text: Likewise
+      feedback: Not quite, but you’re on the right track.
+    - text: Therefore
+      correct: yes
+      feedback: You're on the right track!
+
+Vocab_23:
+  type: quiz
+  text: Because (23/50)
+  answers:
+    - text: Due to
+      correct: yes
+      feedback: Superb!
+    - text: Despite
+      feedback: Close, but let’s give it another shot.
+
+Vocab_24:
+  type: quiz
+  text: Happy (24/50)
+  answers:
+    - text: Ecstatic
+      correct: yes
+      feedback: You're crushing it!
+    - text: Intelligent
+      feedback: That’s an interesting attempt, but not the right answer.
+
+Vocab_25:
+  type: quiz
+  text: Difficult (25/50)
+  answers:
+    - text: Challenging
+      correct: yes
+      feedback: Keep pushing forward!
+    - text: Serious
+      feedback: Good effort, but let’s rethink that.
+
+Vocab_26:
+  type: quiz
+  text: Great (26/50)
+  answers:
+    - text: Terrible
+      feedback: Not exactly, how about we try a different approach?
+    - text: Fantastic
+      correct: yes
+      feedback: Impressive!
+
+Vocab_27:
+  type: quiz
+  text: Tasty (27/50)
+  answers:
+    - text: Bland
+      feedback: I see where you’re coming from, but that's not quite it.
+    - text: Delicious
+      correct: yes
+      feedback: You're a rockstar!
+
+Vocab_28:
+  type: quiz
+  text: I like English. (28/50)
+  answers:
+    - text: I don't mind English.
+      feedback: Nice try, but let's keep working on it.
+    - text: I'm fond of English.
+      correct: yes
+      feedback: Outstanding performance!
+
+Vocab_29:
+  type: quiz
+  text: Sad (29/50)
+  answers:
+    - text: Depressed
+      correct: yes
+      feedback: Brilliant!
+    - text: Worried
+      feedback: That's a good start, but let's refine it a bit.
+
+Vocab_30:
+  type: quiz
+  text: Tired (30/50)
+  answers:
+    - text: Energized
+      feedback: A solid attempt, but not the correct answer.
+    - text: Exhausted
+      correct: yes
+      feedback: You're nailing it!
+
+Score_03:
+  type: test
+  prefix: Vocab_
+  text: |
+    {score} правильных ответов из {maxscore}
+  score:
+    0: Отличный результат!
+    10: Ты молодец! Почти все запомнил. Так держать!
+    40: Очень хороший результат! В следующий раз будет еще лучше!
+    100: Что-то пошло не так!
+  button: Супер
+
+Jumper_03:
+  type: jump
+  text: Класс! Остановимся тут или попробуем еще 10?
+  options:
+    - text: Хватит
+      goto: Course_intro_02
+    - text: Можно еще
+
+Vocab_31:
+  type: quiz
+  text: Beautiful (31/50)
+  answers:
+    - text: Unappealing
+      feedback: Almost there, let's try again!
+    - text: Attractive
+      correct: yes
+      feedback: Awesome job!
+
+Vocab_32:
+  type: quiz
+  text: Funny (32/50)
+  answers:
+    - text: Hilarious
+      correct: yes
+      feedback: Fantastic work!
+    - text: Provocative
+      feedback: Not quite, but you’re on the right track.
+
+Vocab_33:
+  type: quiz
+  text: Interresting (33/50)
+  answers:
+    - text: Tedious
+      feedback: Close, but let’s give it another shot.
+    - text: Entertaining
+      correct: yes
+      feedback: Keep it up!
+
+Vocab_34:
+  type: quiz
+  text: Cold (34/50)
+  answers:
+    - text: Freezing
+      correct: yes
+      feedback: You're doing amazing!
+    - text: Scorching
+      feedback: That’s an interesting attempt, but not the right answer.
+
+Vocab_35:
+  type: quiz
+  text: Hot (35/50)
+  answers:
+    - text: Boiling
+      correct: yes
+      feedback: Excellent effort!
+    - text: Chilly
+      feedback: Good effort, but let’s rethink that.
+
+Vocab_36:
+  type: quiz
+  text: Old (36/50)
+  answers:
+    - text: Ancient
+      correct: yes
+      feedback: Way to go!
+    - text: Noisy
+      feedback: Not exactly, how about we try a different approach?
+
+Vocab_37:
+  type: quiz
+  text: Clean (37/50)
+  answers:
+    - text: Filthy
+      feedback: I see where you’re coming from, but that's not quite it.
+    - text: Spotless
+      correct: yes
+      feedback: You're on the right track!
+
+Vocab_38:
+  type: quiz
+  text: He said (38/50)
+  answers:
+    - text: He replied
+      correct: yes
+      feedback: Superb!
+    - text: He ignored
+      feedback: Nice try, but let's keep working on it.
+
+Vocab_39:
+  type: quiz
+  text: Afraid (39/50)
+  answers:
+    - text: Brave
+      feedback: That's a good start, but let's refine it a bit.
+    - text: Horrified
+      correct: yes
+      feedback: You're crushing it!
+
+Vocab_40:
+  type: quiz
+  text: Pretty (40/50)
+  answers:
+    - text: Gorgeous
+      correct: yes
+      feedback: Keep pushing forward!
+    - text: Plain
+      feedback: A solid attempt, but not the correct answer.
+
+Score_04:
+  type: test
+  prefix: Vocab_
+  text: |
+    У вас {score} правильных ответов из {maxscore}
+  score:
+    0: Отличный результат!
+    10: Ты молодец! Почти все запомнил. Так держать!
+    40: Очень хороший результат! В следующий раз будет еще лучше!
+    100: Что-то пошло не так!
+  button: Супер
+
+Jumper_04:
+  type: jump
+  text: Вы дейсвительно трудяга! Еще 10?
+  options:
+    - text: Достаточно
+      goto: Course_intro_02
+    - text: Готов взять еще!
+
+Vocab_41:
+  type: quiz
+  text: Worried (41/50)
+  answers:
+    - text: Carefree
+      feedback: Almost there, let's try again!
+    - text: Anxious
+      correct: yes
+      feedback: Impressive!
+
+Vocab_42:
+  type: quiz
+  text: Very big (42/50)
+  answers:
+    - text: Tiny
+      feedback: Not quite, but you’re on the right track.
+    - text: Enormous
+      correct: yes
+      feedback: You're a rockstar!
+
+Vocab_43:
+  type: quiz
+  text: Very good (43/50)
+  answers:
+    - text: Outstanding
+      correct: yes
+      feedback: Outstanding performance!
+    - text: Terrible
+      feedback: Close, but let’s give it another shot.
+
+Vocab_44:
+  type: quiz
+  text: Start yoga (44/50)
+  answers:
+    - text: Quit yoga
+      feedback: That’s an interesting attempt, but not the right answer.
+    - text: Take up yoga
+      correct: yes
+      feedback: Brilliant!
+
+Vocab_45:
+  type: quiz
+  text: Disappoint (45/50)
+  answers:
+    - text: Encourage
+      feedback: Good effort, but let’s rethink that.
+    - text: Let somebody down
+      correct: yes
+      feedback: You're nailing it!
+
+Vocab_46:
+  type: quiz
+  text: Spend time (46/50)
+  answers:
+    - text: Ignore
+      feedback: Not exactly, how about we try a different approach?
+    - text: Hang out
+      correct: yes
+      feedback: Impressive!
+
+Vocab_47:
+  type: quiz
+  text: Interesting (47/50)
+  answers:
+    - text: Fascinating
+      correct: yes
+      feedback: You're a rockstar!
+    - text: Dull
+      feedback: I see where you’re coming from, but that's not quite it.
+
+Vocab_48:
+  type: quiz
+  text: Great (48/50)
+  answers:
+    - text: Dismal
+      feedback: Nice try, but let's keep working on it.
+    - text: Awesome
+      correct: yes
+      feedback: Outstanding performance!
+
+Vocab_49:
+  type: quiz
+  text: I know that... (49/50)
+  answers:
+    - text: I'm convinced that...
+      correct: yes
+      feedback: Brilliant!
+    - text: I doubt that...
+      feedback: That's a good start, but let's refine it a bit.
+
+Vocab_50:
+  type: quiz
+  text: Nice (50/50)
+  answers:
+    - text: Enjoyable
+      correct: yes
+      feedback: You're nailing it!
+    - text: Unpleasant
+      feedback: A solid attempt, but not the correct answer.
+
+Score_50:
+  type: test
+  prefix: Vocab_
+  text: |
+    В итоге у тебя {score} правильных ответов из 50!
+  score:
+    0: Давай все повторим и еще раз попробуем в следующий раз.
+    20: Очень хороший результат! В следующий раз будет еще лучше!
+    45: Ты молодец! Почти все запомнил. Так держать!
+    50: Отличный результат!
+  button: ок!
+
+Course_intro_02:
+  type: message
+  text: >
+    Добрались!
+
+Revision_02:
+  type: revision
+  prefix: Vocab_
+  text: Давай проделаем работу над ошибками!
+  no_mistakes: Ошибок нет, молодец!
+  button: Ok!
+
+Course_intro_02_01:
+  type: message
+  text: >
+    В IELTS надо уметь описывать графики. Сначала давай посмотрим на слова,
+    которые тебе пригодятся.
+  button: Давай
+  media:
+    - https://drive.google.com/file/d/1nawgNF8R832tFjbjF4_1Z42IKq8RFepf/view?usp=drive_link
+
+GraphMsg_1:
+  type: message
+  text: |
+    Посмотри на график и подумай, какое предложение подходит.
+  media:
+    - https://drive.google.com/file/d/1d0Brvmbda8t78p8kRg38AhEh7eBmrunU/view?usp=drive_link
+GraphQuiz_1:
+  type: quiz
+  text: Выберите правильный ответ, который описывает график (1/9)
+  answers:
+    - text: The chart depicts that the production costs halved between March and June.
+      feedback: Almost there, let's try again!
+    - text: The graph shows that the sales figures decreased steadily over the last six months.
+      correct: yes
+      feedback: Awesome job!
+
+GraphMsg_2:
+  type: message
+  text: |
+    Посмотри на график и подумай, какое предложение подходит.
+  media:
+    - https://drive.google.com/file/d/1VPNtw94FqxqHw8_Kl_nFT7mx6yZfnahT/view?usp=drive_link
+GraphQuiz_2:
+  type: quiz
+  text: Выберите правильный ответ, который описывает график (2/9)
+  answers:
+    - text: According to the chart, the number of new users dropped significantly in April.
+      feedback: Not quite, but you’re on the right track.
+    - text: The line graph indicates that the revenue fell sharply in the third quarter.
+      correct: yes
+      feedback: Fantastic work!
+
+GraphMsg_3:
+  type: message
+  text: |
+    Посмотри на график и подумай, какое предложение подходит.
+  media:
+    - https://drive.google.com/file/d/1YV1n5b2vA6pfBmMj3ou7mw5pvq5s2dpr/view?usp=drive_link
+GraphQuiz_3:
+  type: quiz
+  text: Выберите правильный ответ, который описывает график (3/9)
+  answers:
+    - text: According to the chart, the number of new users dropped significantly in April.
+      correct: yes
+      feedback: Keep it up!
+    - text: The data shows a clear downward trend in customer satisfaction.
+      feedback: Close, but let’s give it another shot.
+
+GraphMsg_4:
+  type: message
+  text: |
+    Посмотри на график и подумай, какое предложение подходит.
+  media:
+    - https://drive.google.com/file/d/1y7Lm3d67-v809JMeXCn7NxHzRpdBnwg2/view?usp=drive_link
+GraphQuiz_4:
+  type: quiz
+  text: Выберите правильный ответ, который описывает график (4/9)
+  answers:
+    - text: The data shows a clear downward trend in customer satisfaction.
+      correct: yes
+      feedback: You're doing amazing!
+    - text: In January, the stock prices plummeted to their lowest level.
+      feedback: That’s an interesting attempt, but not the right answer.
+
+GraphMsg_5:
+  type: message
+  text: |
+    Посмотри на график и подумай, какое предложение подходит.
+  media:
+    - https://drive.google.com/file/d/1eapcU89WN0uzFv2OlujLmb6sc-jRYuiX/view?usp=drive_link
+GraphQuiz_5:
+  type: quiz
+  text: Выберите правильный ответ, который описывает график (5/9)
+  answers:
+    - text: In January, the stock prices plummeted to their lowest level.
+      correct: yes
+      feedback: Excellent effort!
+    - text: The graph illustrates how the number of visitors plunged after the holiday season.
+      feedback: Good effort, but let’s rethink that.
+
+GraphMsg_6:
+  type: message
+  text: |
+    Посмотри на график и подумай, какое предложение подходит.
+  media:
+    - https://drive.google.com/file/d/1Zy1tx3DV5aecz47WCtSTOVhDvtUHReC1/view?usp=drive_link
+GraphQuiz_6:
+  type: quiz
+  text: Выберите правильный ответ, который описывает график (6/9)
+  answers:
+    - text: The graph illustrates how the number of visitors plunged after the holiday season.
+      correct: yes
+      feedback: Way to go!
+    - text: There was a slight dip in the profits during the first quarter.
+      feedback: Not exactly, how about we try a different approach?
+
+GraphMsg_7:
+  type: message
+  text: |
+    Посмотри на график и подумай, какое предложение подходит.
+  media:
+    - https://drive.google.com/file/d/1hOtCPlEsu3YNpqs0TPzYoISgD8OWqtoz/view?usp=drive_link
+GraphQuiz_7:
+  type: quiz
+  text: Выберите правильный ответ, который описывает график (7/9)
+  answers:
+    - text: There was a slight dip in the profits during the first quarter.
+      correct: yes
+      feedback: You're on the right track!
+    - text: The unemployment rate hit a trough in May before starting to rise again.
+      feedback: I see where you’re coming from, but that's not quite it.
+
+GraphMsg_8:
+  type: message
+  text: |
+    Посмотри на график и подумай, какое предложение подходит.
+  media:
+    - https://drive.google.com/file/d/1JQ4BzjIQc89tcI-3eGtnWn8kGgjlDwqa/view?usp=drive_link
+GraphQuiz_8:
+  type: quiz
+  text: Выберите правильный ответ, который описывает график (8/9)
+  answers:
+    - text: The unemployment rate hit a trough in May before starting to rise again.
+      correct: yes
+      feedback: Superb!
+    - text: The graph shows that the sales figures decreased steadily over the last six months.
+      feedback: Nice try, but let's keep working on it.
+
+GraphMsg_9:
+  type: message
+  text: |
+    Посмотри на график и подумай, какое предложение подходит.
+  media:
+    - https://drive.google.com/file/d/1HmLTGLVHxp7BQ_jGfY0PqIoMdi0hE8tb/view?usp=drive_link
+GraphQuiz_9:
+  type: quiz
+  text: Выберите правильный ответ, который описывает график (9/9)
+  answers:
+    - text: According to the chart, the number of new users dropped significantly in April.
+      feedback: That's a good start, but let's refine it a bit.
+    - text: The chart depicts that the production costs halved between March and June.
+      correct: yes
+      feedback: You're crushing it!
+
+Score_Graph_01:
+  type: test
+  prefix: GraphQuiz_
+  text: |
+    У вас {score} правильных ответов из 9!
+  score:
+    0: Неплохой результат! Давай все повторим и еще раз попробуем в следующий раз.
+    4: Очень хороший результат! В следующий раз будет еще лучше!
+    8: Ты молодец! Почти все запомнил. Так держать!
+    9: Отличный результат!
+  button: ок!
+
+GraphMsg2_1:
+  type: message
+  text: |
+    Посмотри на график и подумай, какое предложение подходит
+  media:
+    - https://drive.google.com/file/d/1XWnk4d-JoY7E_NuJ29bqouH-YfXKslqh/view?usp=drive_link
+
+GraphQuiz2_1:
+  type: quiz
+  text: Выберите правильный ответ, который описывает график (1/8)
+  answers:
+    - text: The number of subscribers increased rapidly over the past year.
+      correct: yes
+      feedback: Awesome job!
+    - text: The line graph shows a steady rise in temperature over the week.
+      feedback: Almost there, let's try again!
+
+GraphMsg2_2:
+  type: message
+  text: |
+    Посмотри на график и подумай, какое предложение подходит
+  media:
+    - https://drive.google.com/file/d/1Y4mPCWlytjjIvoWgsWBsw99aoWnVBxbK/view?usp=drive_link
+
+GraphQuiz2_2:
+  type: quiz
+  text: Выберите правильный ответ, который описывает график (2/8)
+  answers:
+    - text: The line graph shows a steady rise in temperature over the week.
+      correct: yes
+      feedback: Fantastic work!
+    - text: The sales surged in 2008.
+      feedback: Not quite, but you’re on the right track.
+
+GraphMsg2_3:
+  type: message
+  text: |
+    Посмотри на график и подумай, какое предложение подходит
+  media:
+    - https://drive.google.com/file/d/1p0_6zc4b5npaMJK-UGhuho0ZIVssvI2A/view?usp=drive_link
+
+GraphQuiz2_3:
+  type: quiz
+  text: Выберите правильный ответ, который описывает график (3/8)
+  answers:
+    - text: The prices grew consistently each quarter.
+      feedback: Close, but let’s give it another shot.
+    - text: The sales surged in 2008.
+      correct: yes
+      feedback: Keep it up!
+
+GraphMsg2_4:
+  type: message
+  text: |
+    Посмотри на график и подумай, какое предложение подходит
+  media:
+    - https://drive.google.com/file/d/1NjTlDArcVeCrmi8lWDzhcAPoNcMqpAuS/view?usp=drive_link
+
+GraphQuiz2_4:
+  type: quiz
+  text: Выберите правильный ответ, который описывает график (4/8)
+  answers:
+    - text: There was an upward trend in the number of social media users over the past decade.
+      feedback: That’s an interesting attempt, but not the right answer.
+    - text: The prices grew consistently each quarter.
+      correct: yes
+      feedback: You're doing amazing!
+
+GraphMsg2_5:
+  type: message
+  text: |
+    Посмотри на график и подумай, какое предложение подходит
+  media:
+    - https://drive.google.com/file/d/17DJiTDv7PaiUE2JZIOXaizM6eJtOmrLt/view?usp=drive_link
+
+GraphQuiz2_5:
+  type: quiz
+  text: Выберите правильный ответ, который описывает график (5/8)
+  answers:
+    - text: There was an upward trend in the number of social media users over the past decade.
+      correct: yes
+      feedback: Excellent effort!
+    - text: The graph clearly indicates that the company’s revenue doubled between 2022 and 2023.
+      feedback: Good effort, but let’s rethink that.
+
+GraphMsg2_6:
+  type: message
+  text: |
+    Посмотри на график и подумай, какое предложение подходит
+  media:
+    - https://drive.google.com/file/d/150xDxNAhwAr-QzlglJLhEy19BEb09kWg/view?usp=drive_link
+
+GraphQuiz2_6:
+  type: quiz
+  text: Выберите правильный ответ, который описывает график (6/8)
+  answers:
+    - text: The prices rocketed in 2009.
+      feedback: Not exactly, how about we try a different approach?
+    - text: The graph clearly indicates that the company’s revenue doubled between 2022 and 2023.
+      correct: yes
+      feedback: Way to go!
+
+GraphMsg2_7:
+  type: message
+  text: |
+    Посмотри на график и подумай, какое предложение подходит
+  media:
+    - https://drive.google.com/file/d/10Rcw2JK6mBzDPBuvuZ1Km_j6nzC3oILU/view?usp=drive_link
+
+GraphQuiz2_7:
+  type: quiz
+  text: Выберите правильный ответ, который описывает график (7/8)
+  answers:
+    - text: The figures soared to 89% in the final year.
+      feedback: I see where you’re coming from, but that's not quite it.
+    - text: The prices rocketed in 2009.
+      correct: yes
+      feedback: You're on the right track!
+
+GraphMsg2_8:
+  type: message
+  text: |
+    Посмотри на график и подумай, какое предложение подходит
+  media:
+    - https://drive.google.com/file/d/1zFI5z-FKSk0YjFPUfJ-jIx-3znwc4jr8/view?usp=drive_link
+
+GraphQuiz2_8:
+  type: quiz
+  text: Выберите правильный ответ, который описывает график (8/8)
+  answers:
+    - text: The number of subscribers increased rapidly over the past year.
+      feedback: Nice try, but let's keep working on it.
+    - text: The figures soared to 89% in the final year.
+      correct: yes
+      feedback: Superb!

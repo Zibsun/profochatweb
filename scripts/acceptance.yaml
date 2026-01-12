@@ -1,0 +1,21 @@
+Course_intro_00:
+  type: message
+  text: >
+    Привет! Рад тебя видеть! Я — 🤖 Greek Bot! Этот курс поможет тебе
+    подготовиться делать домашку по греческому языку в школе Leeke
+Course_intro_01:
+  type: message
+  text: >
+    Давай проверим несколько, которые ты должен знать, если
+    хочешь успешно сдать экзамен!
+  button: Давай
+  
+Vocab_1:
+  type: quiz
+  text: Important (1/50)
+  answers:
+    - text: Viral
+      feedback: Almost there, let's try again!
+    - text: Essential
+      correct: yes
+      feedback: Awesome job!

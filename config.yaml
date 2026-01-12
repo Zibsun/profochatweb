@@ -1,0 +1,15 @@
+settings:
+  report_chat_id: "-4282014694"
+  report: False
+  check_interval: 60m
+ban_settings:
+  ban_limit: 150
+  ban_reason: "limit 150"
+  exclude:
+    - 18491148
+    - 158940740
+    - 246438430
+    - 504073085
+openai:
+  temperature: 0.2
+  model: gpt-4o-2024-11-20

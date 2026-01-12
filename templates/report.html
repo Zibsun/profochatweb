@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Conversation Report</title>
+    <link href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css" rel="stylesheet">
+</head>
+<body>
+    <section class="section">
+        <div class="container">
+            <h1 class="title">Conversation Report</h1>
+            <div class="field">
+                <label class="label">Usernames</label>
+                <div class="control">
+                    <div class="tags">
+                        <a class="tag is-link" href="/?sort={{ sort }}&order={{ order }}&page=1">All</a>
+                        {% for user in users %}
+                        <a class="tag is-link" href="/?username={{ user }}&sort={{ sort }}&order={{ order }}&page=1">{{ user }}</a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label">Course ID</label>
+                <div class="control">
+                    <div class="select">
+                        <select name="course_id" onchange="window.location.href='/?course_id='+this.value+'&username={{ username }}&sort={{ sort }}&order={{ order }}&page=1'">
+                            <option value="">All</option>
+                            {% for course in courses %}
+                            <option value="{{ course }}" {% if course == selected_course_id %}selected{% endif %}>{{ course }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <form method="get" action="/download">
+                <input type="hidden" name="username" value="{{ username }}">
+                <input type="hidden" name="course_id" value="{{ selected_course_id }}">
+                <input type="hidden" name="sort" value="{{ sort }}">
+                <input type="hidden" name="order" value="{{ order }}">
+                <button class="button is-primary" type="submit">Download CSV</button>
+            </form>
+
+            <table class="table is-striped is-fullwidth" style="margin-top: 20px;">
+                <thead>
+                    <tr>
+                        <th>
+                            <a href="/?username={{ username }}&course_id={{ selected_course_id }}&sort=date_inserted&order=asc&page=1">Date Inserted ↑</a> |
+                            <a href="/?username={{ username }}&course_id={{ selected_course_id }}&sort=date_inserted&order=desc&page=1">↓</a>
+                        </th>
+                        <th>Course ID</th>
+                        <th>Element ID</th>
+                        <th>Username</th>
+                        <th>Role</th>
+                        <th>Report</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    <tr>
+                        <td>{{ row['date_inserted'] }}</td>
+                        <td>{{ row['course_id'] }}</td>
+                        <td>{{ row['element_id'] }}</td>
+                        <td>{{ row['username'] }}</td>
+                        <td>{{ row['role'] }}</td>
+                        <td>{{ row['report']|safe }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <nav class="pagination" role="navigation" aria-label="pagination">
+                <a class="pagination-previous" href="/?username={{ username }}&course_id={{ selected_course_id }}&sort={{ sort }}&order={{ order }}&page={{ prev_page }}" {% if prev_page < 1 %}disabled{% endif %}>Previous</a>
+                <a class="pagination-next" href="/?username={{ username }}&course_id={{ selected_course_id }}&sort={{ sort }}&order={{ order }}&page={{ next_page }}" {% if next_page > total_pages %}disabled{% endif %}>Next</a>
+                <ul class="pagination-list">
+                    {% for p in range(1, total_pages + 1) %}
+                    <li><a class="pagination-link {% if p == current_page %}is-current{% endif %}" href="/?username={{ username }}&course_id={{ selected_course_id }}&sort={{ sort }}&order={{ order }}&page={{ p }}">{{ p }}</a></li>
+                    {% endfor %}
+                </ul>
+            </nav>
+        </div>
+    </section>
+</body>
+</html>

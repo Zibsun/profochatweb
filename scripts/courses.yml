@@ -1,0 +1,50 @@
+default:
+  path: scripts/default.yml
+test:
+  path: scripts/test.yml
+dev:
+  path: scripts/dev.yaml
+teacher:
+  path: scripts/teacher.yaml
+miniapp:
+  path: scripts/miniapp.yml
+us:
+  path: scripts/userstory.yml
+  element: Course_intro_end
+trendytest:
+  path: scripts/trendytest.yml
+forming2:
+  path: scripts/teacher.yaml
+  restricted: "yes"
+  decline_text: |
+    Хочешь присоединиться к курсу? Регистрируйся! https://trendyenglish.ru/page53699999.html
+forming:
+  path: scripts/teacher.yaml
+ielts:
+  path: scripts/ielts.yaml
+rev:
+  path: scripts/rev.yaml
+ielts2:
+  path: scripts/ielts2.yaml
+testdb:
+  path: db
+acc:
+  path: scripts/acceptance.yaml
+tst:
+  path: db
+speaking:
+  path: scripts/speaking.yaml
+greek:
+  path: scripts/greek_test.yml
+writing:
+  path: scripts/listening_image_matching_example.yaml
+testmessages:
+  path: scripts/test_messages.yml
+test_all_elements:
+  path: scripts/test_all_elements.yml
+test_test_element:
+  path: scripts/test_test_element.yml
+ai_bee1_v12:
+  path: scripts/ai_bee1_v12.yml
+test_course_editor:
+  path: scripts/test_course_editor.yml

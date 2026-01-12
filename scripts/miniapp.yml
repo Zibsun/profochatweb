@@ -1,0 +1,40 @@
+Course_intro_00:
+  type: message
+  text: |
+    Привет! Рад тебя видеть!
+
+    Я — 🤖 Profochat, бот с искуственным интеллектом. Моя цель — помочь тебе с курсом _"User Stories"_.
+
+    Этот мини-курс позволит тебе на примерах разобраться с тем, зачем и как использовать пользовательские истории.
+
+Mini_App_Test_01:
+  type: miniapp
+  text: |
+    Mini App launch Test
+  button: Launch
+  app_url: https://73c7-24-54-90-118.ngrok-free.app
+  question:
+    type: multiple_choice
+    text: |
+      What is the capital of France?
+    options:
+      - text: Paris
+      - text: London
+      - text: Berlin
+      - text: Madrid
+  answer: 
+    actual: Paris
+    correct_feedback: Correct! Paris is the capital of France.
+    incorrect_feedback: Incorrect! The capital of France is Paris.
+
+Course_intro_01:
+  type: message
+  text: |
+    Зачем этот курс? Смотри в карточках 👆. Вообще, в курсе большая часть теории оформлена в подобных карточках, так что обращай на них особое внимание.
+
+    Курс пригоден для новичков, но если ты уже знаком с этой темой, он поможет углубить твои знания. Особенно в некоторых заданиях, где ты будешь общаться со мной в режиме диалога, — мы сможем обсудить весьма глубокие вопросы по твоему желанию.
+  media:
+  - https://drive.google.com/file/d/1_-rPI3B51GK11eimr8sE4eYsS_puiAUS/view
+  - https://drive.google.com/open?id=1ZvYLt945BXbR9d76aFjUfqJYSvfvP2Zz
+  - https://drive.google.com/open?id=1Zvuh9NtZN7z0D4-xGPVJV9vqFyTaCsjA
+  - https://drive.google.com/open?id=1ZvzCPAL14bzZrM8pN4ukIkFg1XEzGlho
