@@ -334,7 +334,15 @@ export function BotManagement() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || "Failed to attach courses");
+        console.error("Error response:", errorData);
+        // Если есть детальные ошибки, показываем их
+        if (errorData.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+          const errorMessages = errorData.errors.map((e: any) => 
+            `Course "${e.course_id}": ${e.error}`
+          ).join("; ");
+          throw new Error(errorMessages || errorData.message || "Failed to attach courses");
+        }
+        throw new Error(errorData.message || errorData.error || "Failed to attach courses");
       }
 
       // Обновляем список подключенных курсов

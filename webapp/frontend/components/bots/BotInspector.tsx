@@ -73,6 +73,7 @@ export function BotInspector({
           botId={botDetails.id}
           onAddCourse={onAddCourse}
           onCourseRemoved={onCourseRemoved}
+          onCourseUpdated={onCourseRemoved}
         />
       </div>
     </div>

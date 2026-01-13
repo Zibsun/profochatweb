@@ -15,6 +15,7 @@ from app.models.conversation import Conversation
 from app.models.waiting_element import WaitingElement
 from app.models.course_db import CourseDB
 from app.models.course_element_db import CourseElementDB
+from app.models.course_deployment_db import CourseDeploymentDB
 from app.models.banned_participant import BannedParticipant
 from app.models.course_participant import CourseParticipant
 
@@ -32,11 +33,23 @@ class CourseRepository:
     
     # ========== Run (сессии прохождения курсов) ==========
     
-    def create_run(self, course_id: str, username: Optional[str], chat_id: int, 
-                   utm_source: Optional[str] = None, utm_campaign: Optional[str] = None) -> int:
-        """Создание новой сессии прохождения курса"""
+    def create_run(self, course_code: str, username: Optional[str], chat_id: int, 
+                   utm_source: Optional[str] = None, utm_campaign: Optional[str] = None,
+                   account_id: int = 1) -> int:
+        """Создание новой сессии прохождения курса по course_code"""
+        # Получаем course_id по course_code
+        course = self.db.query(CourseDB).filter(
+            and_(
+                CourseDB.course_code == course_code,
+                CourseDB.account_id == account_id
+            )
+        ).first()
+        
+        if not course:
+            raise ValueError(f"Course with code '{course_code}' not found")
+        
         run = Run(
-            course_id=course_id,
+            course_id=course_code,  # В таблице run course_id остается TEXT (course_code)
             username=username,
             chat_id=chat_id,
             botname=self.bot_name,
@@ -48,41 +61,41 @@ class CourseRepository:
         self.db.refresh(run)
         return run.run_id
     
-    def get_run_id(self, chat_id: int, course_id: str) -> Optional[int]:
-        """Получение ID сессии по chat_id и course_id"""
+    def get_run_id(self, chat_id: int, course_code: str, account_id: int = 1) -> Optional[int]:
+        """Получение ID сессии по chat_id и course_code"""
         run = self.db.query(Run).filter(
             and_(
                 Run.chat_id == chat_id,
-                Run.course_id == course_id,
+                Run.course_id == course_code,  # В таблице run course_id это course_code (TEXT)
                 Run.botname == self.bot_name
             )
         ).order_by(desc(Run.date_inserted)).first()
         return run.run_id if run else None
     
-    def set_course_ended(self, chat_id: int, course_id: Optional[str] = None) -> None:
-        """Отметка курса как завершенного"""
+    def set_course_ended(self, chat_id: int, course_code: Optional[str] = None) -> None:
+        """Отметка курса как завершенного по course_code"""
         query = self.db.query(Run).filter(
             and_(
                 Run.chat_id == chat_id,
                 Run.botname == self.bot_name
             )
         )
-        if course_id:
-            query = query.filter(Run.course_id == course_id)
+        if course_code:
+            query = query.filter(Run.course_id == course_code)  # В run course_id это course_code
         
         query.update({Run.is_ended: True})
         self.db.commit()
     
-    def is_course_ended(self, chat_id: int, course_id: Optional[str] = None) -> bool:
-        """Проверка завершения курса"""
+    def is_course_ended(self, chat_id: int, course_code: Optional[str] = None) -> bool:
+        """Проверка завершения курса по course_code"""
         query = self.db.query(Run).filter(
             and_(
                 Run.chat_id == chat_id,
                 Run.botname == self.bot_name
             )
         )
-        if course_id:
-            query = query.filter(Run.course_id == course_id)
+        if course_code:
+            query = query.filter(Run.course_id == course_code)  # В run course_id это course_code
         
         run = query.order_by(desc(Run.date_inserted)).first()
         return run.is_ended if run and run.is_ended else False
@@ -298,23 +311,43 @@ class CourseRepository:
     
     # ========== Course DB (метаданные курсов) ==========
     
-    def get_courses(self) -> Dict[str, Dict[str, Any]]:
+    def get_course_id_by_code(self, course_code: str, account_id: int = 1) -> Optional[int]:
+        """Конвертирует course_code в course_id (INT)"""
+        course = self.db.query(CourseDB).filter(
+            and_(
+                CourseDB.course_code == course_code,
+                CourseDB.account_id == account_id
+            )
+        ).first()
+        return course.course_id if course else None
+    
+    def get_course_code_by_id(self, course_id: int, account_id: int = 1) -> Optional[str]:
+        """Конвертирует course_id (INT) в course_code"""
+        course = self.db.query(CourseDB).filter(
+            and_(
+                CourseDB.course_id == course_id,
+                CourseDB.account_id == account_id
+            )
+        ).first()
+        return course.course_code if course else None
+    
+    def get_courses(self, account_id: int = 1) -> Dict[str, Dict[str, Any]]:
         """Получение списка курсов из БД"""
         courses = self.db.query(CourseDB).filter(
-            CourseDB.bot_name == self.bot_name
+            CourseDB.account_id == account_id
         ).all()
         
         result = {}
         for course in courses:
-            result[course.course_id] = {"path": "db"}
+            result[course.course_code] = {"path": "db"}  # Используем course_code как ключ
         return result
     
-    def get_course_info(self, course_id: str) -> Optional[Dict[str, Any]]:
-        """Получение информации о курсе (возвращает словарь с ключами creator_id, date_created, yaml)"""
+    def get_course_info(self, course_code: str, account_id: int = 1) -> Optional[Dict[str, Any]]:
+        """Получение информации о курсе по course_code (возвращает словарь с ключами creator_id, date_created, yaml)"""
         course = self.db.query(CourseDB).filter(
             and_(
-                CourseDB.course_id == course_id,
-                CourseDB.bot_name == self.bot_name
+                CourseDB.course_code == course_code,
+                CourseDB.account_id == account_id
             )
         ).first()
         
@@ -324,30 +357,46 @@ class CourseRepository:
         return {
             "creator_id": course.creator_id,
             "date_created": course.date_created,
-            "yaml": course.yaml
+            "yaml": course.yaml,
+            "course_id": course.course_id,  # Добавляем INT course_id
+            "course_code": course.course_code
         }
     
-    def get_course_as_json(self, course_id: str) -> Dict[str, Any]:
-        """Получение курса в формате JSON (словарь element_id -> element_data)"""
+    def get_course_as_json(self, course_code: str, account_id: int = 1) -> Dict[str, Any]:
+        """Получение курса в формате JSON по course_code (словарь element_id -> element_data)"""
+        # Сначала получаем course_id
+        course = self.db.query(CourseDB).filter(
+            and_(
+                CourseDB.course_code == course_code,
+                CourseDB.account_id == account_id
+            )
+        ).first()
+        
+        if not course:
+            return {}
+        
+        # Используем INT course_id для получения элементов
         elements = self.db.query(CourseElementDB).filter(
             and_(
-                CourseElementDB.course_id == course_id,
-                CourseElementDB.bot_name == self.bot_name
+                CourseElementDB.course_id == course.course_id,
+                CourseElementDB.account_id == account_id
             )
-        ).order_by(CourseElementDB.id).all()
+        ).order_by(CourseElementDB.course_element_id).all()
         
         result = {}
         for elem in elements:
+            if not elem.element_id:  # Пропускаем элементы без element_id
+                continue
             json_data = json.loads(elem.json) if elem.json else {}
             element_data = json_data.get("element_data", {})
             result[elem.element_id] = element_data
         
         return result
     
-    def add_replace_course(self, course_id: str, course_data: Optional[Dict[str, Any]] = None,
-                          bot_name: Optional[str] = None, creator_id: Optional[str] = None,
-                          course_script: Optional[str] = None) -> None:
-        """Добавление или замена курса"""
+    def add_replace_course(self, course_code: str, course_data: Optional[Dict[str, Any]] = None,
+                          bot_name: Optional[str] = None, creator_id: Optional[int] = None,
+                          course_script: Optional[str] = None, account_id: int = 1) -> None:
+        """Добавление или замена курса по course_code"""
         import yaml
         
         bot_name = bot_name or self.bot_name
@@ -359,30 +408,41 @@ class CourseRepository:
         if not course_data:
             raise ValueError("Either course_data or course_script must be provided")
         
-        # Удаляем старые элементы курса
-        self.db.query(CourseElementDB).filter(
+        # Проверяем существование курса
+        existing_course = self.db.query(CourseDB).filter(
             and_(
-                CourseElementDB.course_id == course_id,
-                CourseElementDB.bot_name == bot_name
+                CourseDB.course_code == course_code,
+                CourseDB.account_id == account_id
             )
-        ).delete()
+        ).first()
         
-        # Удаляем старые метаданные курса
-        self.db.query(CourseDB).filter(
-            and_(
-                CourseDB.course_id == course_id,
-                CourseDB.bot_name == bot_name
+        if existing_course:
+            # Обновляем существующий курс
+            course_id_int = existing_course.course_id
+            # Удаляем старые элементы курса
+            self.db.query(CourseElementDB).filter(
+                and_(
+                    CourseElementDB.course_id == course_id_int,
+                    CourseElementDB.account_id == account_id
+                )
+            ).delete()
+            # Обновляем метаданные
+            existing_course.yaml = course_script
+            existing_course.bot_name = bot_name
+            if creator_id:
+                existing_course.creator_id = creator_id
+        else:
+            # Создаем новый курс
+            course_db = CourseDB(
+                course_code=course_code,
+                bot_name=bot_name,
+                account_id=account_id,
+                creator_id=creator_id,
+                yaml=course_script
             )
-        ).delete()
-        
-        # Добавляем метаданные курса
-        course_db = CourseDB(
-            course_id=course_id,
-            bot_name=bot_name,
-            creator_id=creator_id,
-            yaml=course_script
-        )
-        self.db.add(course_db)
+            self.db.add(course_db)
+            self.db.flush()  # Получаем course_id
+            course_id_int = course_db.course_id
         
         # Добавляем элементы курса
         for element_id, element_data in course_data.items():
@@ -397,8 +457,10 @@ class CourseRepository:
                 json_string = json.dumps({"element_data": element_data}, ensure_ascii=False)
             
             course_element = CourseElementDB(
+                course_id=course_id_int,  # Используем INT course_id
+                course_code=course_code,  # Сохраняем course_code для обратной совместимости
+                account_id=account_id,
                 bot_name=bot_name,
-                course_id=course_id,
                 element_id=element_id,
                 json=json_string,
                 element_type=element_type
@@ -407,15 +469,29 @@ class CourseRepository:
         
         self.db.commit()
     
-    def insert_course_element(self, course_id: str, element_id: str, json_data: Dict[str, Any],
-                              element_type: str, bot_name: Optional[str] = None) -> Optional[int]:
-        """Добавление элемента курса"""
+    def insert_course_element(self, course_code: str, element_id: str, json_data: Dict[str, Any],
+                              element_type: str, bot_name: Optional[str] = None, account_id: int = 1) -> Optional[int]:
+        """Добавление элемента курса по course_code"""
         bot_name = bot_name or self.bot_name
+        
+        # Получаем course_id по course_code
+        course = self.db.query(CourseDB).filter(
+            and_(
+                CourseDB.course_code == course_code,
+                CourseDB.account_id == account_id
+            )
+        ).first()
+        
+        if not course:
+            return None
+        
         json_string = json.dumps(json_data, ensure_ascii=False)
         
         course_element = CourseElementDB(
+            course_id=course.course_id,  # Используем INT course_id
+            course_code=course_code,
+            account_id=account_id,
             bot_name=bot_name,
-            course_id=course_id,
             element_id=element_id,
             json=json_string,
             element_type=element_type
@@ -423,47 +499,80 @@ class CourseRepository:
         self.db.add(course_element)
         self.db.commit()
         self.db.refresh(course_element)
-        return course_element.id
+        return course_element.course_element_id
     
-    def get_element_from_course_by_id(self, course_id: str, element_id: str) -> Optional[Tuple[str, Dict[str, Any]]]:
+    def get_element_from_course_by_id(self, course_code: str, element_id: str, account_id: int = 1) -> Optional[Tuple[str, Dict[str, Any]]]:
         """Получение элемента курса по ID (возвращает (element_id, json_data))"""
-        element = self.db.query(CourseElementDB).filter(
+        # Получаем course_id по course_code
+        course = self.db.query(CourseDB).filter(
             and_(
-                CourseElementDB.course_id == course_id,
-                CourseElementDB.element_id == element_id,
-                CourseElementDB.bot_name == self.bot_name
+                CourseDB.course_code == course_code,
+                CourseDB.account_id == account_id
             )
         ).first()
         
-        if not element:
+        if not course:
             return None
         
-        element_data = json.loads(element.json) if element.json else {}
-        return (element.element_id, element_data)
-    
-    def get_first_element_from_course(self, course_id: str) -> Optional[Tuple[str, Dict[str, Any]]]:
-        """Получение первого элемента курса (возвращает (element_id, json_data))"""
         element = self.db.query(CourseElementDB).filter(
             and_(
-                CourseElementDB.course_id == course_id,
-                CourseElementDB.bot_name == self.bot_name
+                CourseElementDB.course_id == course.course_id,
+                CourseElementDB.element_id == element_id,
+                CourseElementDB.account_id == account_id
             )
-        ).order_by(CourseElementDB.id).first()
+        ).first()
         
-        if not element:
+        if not element or not element.element_id:
             return None
         
         element_data = json.loads(element.json) if element.json else {}
         return (element.element_id, element_data)
     
-    def get_next_course_element_by_id(self, course_id: str, element_id: str) -> Optional[Tuple[str, Dict[str, Any]]]:
+    def get_first_element_from_course(self, course_code: str, account_id: int = 1) -> Optional[Tuple[str, Dict[str, Any]]]:
+        """Получение первого элемента курса (возвращает (element_id, json_data))"""
+        # Получаем course_id по course_code
+        course = self.db.query(CourseDB).filter(
+            and_(
+                CourseDB.course_code == course_code,
+                CourseDB.account_id == account_id
+            )
+        ).first()
+        
+        if not course:
+            return None
+        
+        element = self.db.query(CourseElementDB).filter(
+            and_(
+                CourseElementDB.course_id == course.course_id,
+                CourseElementDB.account_id == account_id
+            )
+        ).order_by(CourseElementDB.course_element_id).first()
+        
+        if not element or not element.element_id:
+            return None
+        
+        element_data = json.loads(element.json) if element.json else {}
+        return (element.element_id, element_data)
+    
+    def get_next_course_element_by_id(self, course_code: str, element_id: str, account_id: int = 1) -> Optional[Tuple[str, Dict[str, Any]]]:
         """Получение следующего элемента курса"""
+        # Получаем course_id по course_code
+        course = self.db.query(CourseDB).filter(
+            and_(
+                CourseDB.course_code == course_code,
+                CourseDB.account_id == account_id
+            )
+        ).first()
+        
+        if not course:
+            return None
+        
         # Находим текущий элемент
         current = self.db.query(CourseElementDB).filter(
             and_(
-                CourseElementDB.course_id == course_id,
+                CourseElementDB.course_id == course.course_id,
                 CourseElementDB.element_id == element_id,
-                CourseElementDB.bot_name == self.bot_name
+                CourseElementDB.account_id == account_id
             )
         ).first()
         
@@ -473,13 +582,13 @@ class CourseRepository:
         # Находим следующий элемент
         next_element = self.db.query(CourseElementDB).filter(
             and_(
-                CourseElementDB.course_id == course_id,
-                CourseElementDB.bot_name == self.bot_name,
-                CourseElementDB.id > current.id
+                CourseElementDB.course_id == course.course_id,
+                CourseElementDB.account_id == account_id,
+                CourseElementDB.course_element_id > current.course_element_id
             )
-        ).order_by(CourseElementDB.id).first()
+        ).order_by(CourseElementDB.course_element_id).first()
         
-        if not next_element:
+        if not next_element or not next_element.element_id:
             return None
         
         element_data = json.loads(next_element.json) if next_element.json else {}

@@ -5,9 +5,11 @@ if (typeof window !== 'undefined') {
 
 import { query, queryOne } from '@/lib/db';
 import yaml from 'js-yaml';
+import type { CourseFromDB as CourseFromDBType } from '@/lib/types/course-types';
 
 export interface CourseMetadata {
-  course_id: string;
+  course_code: string;  // Используем course_code вместо course_id
+  course_id?: number;   // INT course_id опционально
   title?: string | null;
   description?: string | null;
   element?: string;
@@ -24,43 +26,39 @@ export interface CourseElement {
   element_type: string;
 }
 
-export interface CourseFromDB {
-  course_id: string;
-  title: string | null;
-  description: string | null;
-  metadata: any;
-  yaml: string | null;
-  is_active: boolean;
-}
+// Используем тип из course-types.ts
+export type CourseFromDB = CourseFromDBType;
 
 /**
- * Получает курс из базы данных
+ * Получает курс из базы данных по course_code
  */
 export async function getCourseFromDB(
-  courseId: string,
+  courseCode: string,  // Переименовано courseId → courseCode для ясности
   accountId: number
 ): Promise<CourseFromDB | null> {
   const course = await queryOne<CourseFromDB>(
     `SELECT 
       course_id,
+      course_code,
       title,
       description,
       metadata,
       yaml,
-      is_active
+      is_active,
+      account_id
     FROM course
-    WHERE course_id = $1 AND account_id = $2`,
-    [courseId, accountId]
+    WHERE course_code = $1 AND account_id = $2`,
+    [courseCode, accountId]
   );
 
   return course;
 }
 
 /**
- * Получает элементы курса из базы данных
+ * Получает элементы курса из базы данных по course_id (INT)
  */
 export async function getCourseElementsFromDB(
-  courseId: string,
+  courseId: number,  // Теперь INT вместо string
   accountId: number
 ): Promise<CourseElement[]> {
   const elements = await query<CourseElement>(
@@ -97,39 +95,22 @@ export function elementsToYaml(elements: CourseElement[]): Record<string, any> {
 }
 
 /**
- * Сохраняет курс в базу данных
+ * Сохраняет курс в базу данных по course_code
  */
 export async function saveCourseToDB(
-  courseId: string,
+  courseCode: string,  // Переименовано courseId → courseCode
   accountId: number,
   yamlContent: Record<string, any>,
   metadata: Partial<CourseMetadata>,
   title?: string | null,
   description?: string | null
 ): Promise<void> {
-  // Проверяем существование курса
-  // Сначала пробуем новую схему с account_id
-  let existingCourse: { course_id: string } | null = null;
-  try {
-    existingCourse = await queryOne<{ course_id: string }>(
-      `SELECT course_id FROM course
-       WHERE course_id = $1 AND account_id = $2`,
-      [courseId, accountId]
-    );
-  } catch (error) {
-    // Если account_id не существует, пробуем старую схему с bot_name
-    const defaultBotName = process.env.BOT_NAME || 'default';
-    try {
-      existingCourse = await queryOne<{ course_id: string }>(
-        `SELECT course_id FROM course
-         WHERE course_id = $1 AND bot_name = $2`,
-        [courseId, defaultBotName]
-      );
-    } catch (error2) {
-      // Курс не найден, это нормально для нового курса
-      existingCourse = null;
-    }
-  }
+  // Проверяем существование курса по course_code
+  const existingCourse = await queryOne<{ course_id: number; course_code: string }>(
+    `SELECT course_id, course_code FROM course
+     WHERE course_code = $1 AND account_id = $2`,
+    [courseCode, accountId]
+  );
 
   // Подготавливаем метаданные
   const metadataJson = {
@@ -149,192 +130,80 @@ export async function saveCourseToDB(
   });
 
   if (existingCourse) {
-    // Обновляем существующий курс
-    // Пробуем обновить с новыми полями, если они существуют
-    try {
-      await query(
-        `UPDATE course
-         SET title = $3,
-             description = $4,
-             metadata = $5,
-             yaml = $6,
-             updated_at = CURRENT_TIMESTAMP
-         WHERE course_id = $1 AND account_id = $2`,
-        [
-          courseId,
-          accountId,
-          title || null,
-          description || null,
-          JSON.stringify(metadataJson),
-          yamlString,
-        ]
-      );
-    } catch (error: any) {
-      // Если поле updated_at не существует, пробуем без него
-      if (error?.message?.includes('updated_at')) {
-        try {
-          await query(
-            `UPDATE course
-             SET title = $3,
-                 description = $4,
-                 metadata = $5,
-                 yaml = $6
-             WHERE course_id = $1 AND account_id = $2`,
-            [
-              courseId,
-              accountId,
-              title || null,
-              description || null,
-              JSON.stringify(metadataJson),
-              yamlString,
-            ]
-          );
-        } catch (error2: any) {
-          // Если и title/description/metadata не существуют, обновляем только yaml
-          if (error2?.message?.includes('column')) {
-            try {
-              await query(
-                `UPDATE course
-                 SET yaml = $3
-                 WHERE course_id = $1 AND account_id = $2`,
-                [courseId, accountId, yamlString]
-              );
-            } catch (error3: any) {
-              // Если account_id не существует, используем старую схему с bot_name
-              if (error3?.message?.includes('account_id') || error3?.message?.includes('bot_name')) {
-                const defaultBotName = process.env.BOT_NAME || 'default';
-                await query(
-                  `UPDATE course
-                   SET yaml = $3
-                   WHERE course_id = $1 AND bot_name = $2`,
-                  [courseId, defaultBotName, yamlString]
-                );
-              } else {
-                throw error3;
-              }
-            }
-          } else {
-            throw error2;
-          }
-        }
-      } else if (error?.message?.includes('account_id') || error?.message?.includes('bot_name')) {
-        // Если используется старая схема с bot_name
-        const defaultBotName = process.env.BOT_NAME || 'default';
-        await query(
-          `UPDATE course
-           SET yaml = $3
-           WHERE course_id = $1 AND bot_name = $2`,
-          [courseId, defaultBotName, yamlString]
-        );
-      } else {
-        throw error;
-      }
-    }
-  } else {
-    // Создаем новый курс
-    // Используем date_created вместо created_at (совместимость со старой схемой)
-    // Поля title, description, metadata, is_active могут не существовать в старой схеме
-    try {
-      await query(
-        `INSERT INTO course (
-          course_id, account_id, title, description,
-          metadata, yaml, date_created, is_active
-        ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, TRUE)`,
-        [
-          courseId,
-          accountId,
-          title || null,
-          description || null,
-          JSON.stringify(metadataJson),
-          yamlString,
-        ]
-      );
-    } catch (error: any) {
-      // Если поля title, description, metadata, is_active не существуют, пробуем минимальную схему с account_id
-      if (error?.message?.includes('column')) {
-        try {
-          await query(
-            `INSERT INTO course (
-              course_id, account_id, yaml, date_created
-            ) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)`,
-            [
-              courseId,
-              accountId,
-              yamlString,
-            ]
-          );
-        } catch (error2: any) {
-          // Если account_id не существует, значит используется старая схема с bot_name
-          if (error2?.message?.includes('account_id') || error2?.message?.includes('bot_name')) {
-            // Используем значение по умолчанию для bot_name
-            const defaultBotName = process.env.BOT_NAME || 'default';
-            await query(
-              `INSERT INTO course (
-                course_id, bot_name, yaml, date_created
-              ) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)`,
-              [
-                courseId,
-                defaultBotName,
-                yamlString,
-              ]
-            );
-          } else {
-            throw error2;
-          }
-        }
-      } else {
-        throw error;
-      }
-    }
-  }
-
-  // Удаляем старые элементы
-  // Пробуем новую схему с account_id
-  try {
+    // Обновляем существующий курс по course_code
+    await query(
+      `UPDATE course
+       SET title = $3,
+           description = $4,
+           metadata = $5,
+           yaml = $6,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE course_code = $1 AND account_id = $2`,
+      [
+        courseCode,
+        accountId,
+        title || null,
+        description || null,
+        JSON.stringify(metadataJson),
+        yamlString,
+      ]
+    );
+    
+    // Удаляем старые элементы используя INT course_id
     await query(
       `DELETE FROM course_element
        WHERE course_id = $1 AND account_id = $2`,
-      [courseId, accountId]
+      [existingCourse.course_id, accountId]
     );
-  } catch (error: any) {
-    // Если account_id не существует, используем старую схему с bot_name
-    if (error?.message?.includes('account_id') || error?.message?.includes('bot_name')) {
-      const defaultBotName = process.env.BOT_NAME || 'default';
-      await query(
-        `DELETE FROM course_element
-         WHERE course_id = $1 AND bot_name = $2`,
-        [courseId, defaultBotName]
-      );
-    } else {
-      throw error;
-    }
-  }
+    
+    // Сохраняем новые элементы используя INT course_id
+    for (const [elementId, elementData] of Object.entries(yamlContent)) {
+      const elementType = (elementData as any)?.type || 'message';
+      const jsonData = JSON.stringify({ element_data: elementData });
 
-  // Сохраняем новые элементы
-  const defaultBotName = process.env.BOT_NAME || 'default';
-  for (const [elementId, elementData] of Object.entries(yamlContent)) {
-    const elementType = (elementData as any)?.type || 'message';
-    const jsonData = JSON.stringify({ element_data: elementData });
-
-    try {
       await query(
         `INSERT INTO course_element (
-          course_id, account_id, element_id, json, element_type
-        ) VALUES ($1, $2, $3, $4, $5)`,
-        [courseId, accountId, elementId, jsonData, elementType]
+          course_id, course_code, account_id, element_id, json, element_type
+        ) VALUES ($1, $2, $3, $4, $5, $6)`,
+        [existingCourse.course_id, courseCode, accountId, elementId, jsonData, elementType]
       );
-    } catch (error: any) {
-      // Если account_id не существует, используем старую схему с bot_name
-      if (error?.message?.includes('account_id') || error?.message?.includes('bot_name')) {
-        await query(
-          `INSERT INTO course_element (
-            course_id, bot_name, element_id, json, element_type
-          ) VALUES ($1, $2, $3, $4, $5)`,
-          [courseId, defaultBotName, elementId, jsonData, elementType]
-        );
-      } else {
-        throw error;
-      }
+    }
+  } else {
+    // Создаем новый курс
+    // course_id будет автоматически сгенерирован (serial4)
+    const result = await query<{ course_id: number }>(
+      `INSERT INTO course (
+        course_code, account_id, title, description,
+        metadata, yaml, date_created, is_active, bot_name
+      ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, TRUE, $7)
+      RETURNING course_id`,
+      [
+        courseCode,
+        accountId,
+        title || null,
+        description || null,
+        JSON.stringify(metadataJson),
+        yamlString,
+        process.env.BOT_NAME || 'default',
+      ]
+    );
+    
+    const newCourseId = result[0]?.course_id;
+    if (!newCourseId) {
+      throw new Error('Failed to create course');
+    }
+    
+    // Сохраняем элементы используя новый INT course_id
+    for (const [elementId, elementData] of Object.entries(yamlContent)) {
+      const elementType = (elementData as any)?.type || 'message';
+      const jsonData = JSON.stringify({ element_data: elementData });
+
+      await query(
+        `INSERT INTO course_element (
+          course_id, course_code, account_id, element_id, json, element_type
+        ) VALUES ($1, $2, $3, $4, $5, $6)`,
+        [newCourseId, courseCode, accountId, elementId, jsonData, elementType]
+      );
     }
   }
 }
@@ -345,20 +214,22 @@ export async function saveCourseToDB(
 export async function getCoursesFromDB(
   accountId: number
 ): Promise<Array<{
-  course_id: string;
+  course_id: number;
+  course_code: string;
   title: string | null;
   description: string | null;
   metadata: any;
   is_active: boolean;
 }>> {
   const courses = await query<{
-    course_id: string;
+    course_id: number;
+    course_code: string;
     title: string | null;
     description: string | null;
     metadata: any;
     is_active: boolean;
   }>(
-    `SELECT course_id, title, description, metadata, is_active
+    `SELECT course_id, course_code, title, description, metadata, is_active
      FROM course
      WHERE account_id = $1
      ORDER BY date_created DESC`,
@@ -369,16 +240,16 @@ export async function getCoursesFromDB(
 }
 
 /**
- * Проверяет, существует ли курс в БД
+ * Проверяет, существует ли курс в БД по course_code
  */
 export async function courseExistsInDB(
-  courseId: string,
+  courseCode: string,  // Переименовано courseId → courseCode
   accountId: number
 ): Promise<boolean> {
-  const course = await queryOne<{ course_id: string }>(
+  const course = await queryOne<{ course_id: number }>(
     `SELECT course_id FROM course
-     WHERE course_id = $1 AND account_id = $2`,
-    [courseId, accountId]
+     WHERE course_code = $1 AND account_id = $2`,
+    [courseCode, accountId]
   );
 
   return course !== null;

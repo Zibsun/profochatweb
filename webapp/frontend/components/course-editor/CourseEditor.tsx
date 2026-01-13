@@ -268,7 +268,8 @@ export function CourseEditor({ courseId }: CourseEditorProps) {
 
       const data = await response.json();
       setBlocks(data.blocks || []);
-      setCourseTitle(data.course?.course_id || id);
+      // Используем title из данных курса, если он есть, иначе используем course_id/course_code
+      setCourseTitle(data.course?.title || data.course?.course_id || data.course?.course_code || id);
       setIsNewCourse(false);
       setCourseSource(data.source || 'yaml');
       setCourseMetadata({
@@ -637,11 +638,28 @@ export function CourseEditor({ courseId }: CourseEditorProps) {
       
       const method = isNewCourse ? "POST" : "PUT";
       
+      // Генерируем course_id (course_code) из courseTitle, если нужно
+      // Убираем все недопустимые символы и заменяем пробелы на подчеркивания
+      const generateCourseCode = (title: string): string => {
+        const code = title
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9_-]/g, '_')  // Заменяем недопустимые символы на подчеркивания
+          .replace(/\s+/g, '_')  // Заменяем пробелы на подчеркивания
+          .replace(/_+/g, '_')  // Убираем множественные подчеркивания
+          .replace(/^_|_$/g, '');  // Убираем подчеркивания в начале и конце
+        
+        // Если после обработки получилась пустая строка, используем дефолтное значение
+        return code || `course_${Date.now()}`;
+      };
+
+      const finalCourseId = courseId || (courseTitle ? generateCourseCode(courseTitle) : `course_${Date.now()}`);
+
       const body = {
-        course_id: courseId || courseTitle || `course_${Date.now()}`,
+        course_id: finalCourseId,
         blocks,
         settings: {
-          title: courseMetadata?.title,
+          title: courseTitle || courseMetadata?.title,  // Используем courseTitle из состояния
           description: courseMetadata?.description,
           element: courseMetadata?.element,
           restricted: courseMetadata?.restricted,

@@ -40,8 +40,8 @@ export async function GET(
       );
     }
 
-    // Получаем список курсов, которые уже прикреплены к боту
-    const connectedDeployments = await query<{ course_id: string }>(
+    // Получаем список курсов, которые уже прикреплены к боту (используем INT course_id)
+    const connectedDeployments = await query<{ course_id: number }>(
       `SELECT DISTINCT course_id
       FROM course_deployment
       WHERE bot_id = $1 AND account_id = $2`,
@@ -50,9 +50,10 @@ export async function GET(
 
     const connectedCourseIds = new Set(connectedDeployments.map((d) => d.course_id));
 
-    // Получаем все курсы аккаунта
+    // Получаем все курсы аккаунта (используем новую схему с course_code и course_id)
     const allCourses = await query<{
-      course_id: string;
+      course_id: number;
+      course_code: string;
       title?: string;
       description?: string;
       date_created?: string;
@@ -60,6 +61,7 @@ export async function GET(
     }>(
       `SELECT 
         course_id,
+        course_code,
         title,
         description,
         date_created,
@@ -70,10 +72,18 @@ export async function GET(
       [accountId]
     );
 
-    // Фильтруем курсы, которые еще не прикреплены к боту
-    const availableCourses = allCourses.filter(
-      (course) => !connectedCourseIds.has(course.course_id)
-    );
+    // Фильтруем курсы, которые еще не прикреплены к боту (используем INT course_id)
+    const availableCourses = allCourses
+      .filter((course) => !connectedCourseIds.has(course.course_id))
+      .map((course) => ({
+        course_id: course.course_code, // Возвращаем course_code для обратной совместимости
+        course_code: course.course_code,
+        course_id_int: course.course_id,
+        title: course.title,
+        description: course.description,
+        date_created: course.date_created,
+        updated_at: course.updated_at,
+      }));
 
     return NextResponse.json({
       courses: availableCourses,

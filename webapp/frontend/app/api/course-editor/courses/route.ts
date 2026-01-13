@@ -37,7 +37,9 @@ export async function GET(request: NextRequest) {
     const coursesList = dbCourses.map((course) => {
       const metadata = course.metadata || {};
       return {
-        course_id: course.course_id,
+        course_id: course.course_code,  // Используем course_code для обратной совместимости
+        course_code: course.course_code,
+        course_id_int: course.course_id,  // Добавляем INT course_id
         path: 'db',
         title: course.title,
         description: course.description,
@@ -53,10 +55,10 @@ export async function GET(request: NextRequest) {
     });
 
     // 4. Добавляем курсы из YAML (если их нет в БД)
-    const dbCourseIds = new Set(dbCourses.map((c) => c.course_id));
+    const dbCourseCodes = new Set(dbCourses.map((c) => c.course_code));
     for (const [courseId, courseInfo] of Object.entries(yamlCourses)) {
       if (courseId === 'ext_courses') continue;
-      if (!dbCourseIds.has(courseId)) {
+      if (!dbCourseCodes.has(courseId)) {
         coursesList.push({
           course_id: courseId,
           path: courseInfo.path,

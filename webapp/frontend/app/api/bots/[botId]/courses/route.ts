@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { query, queryOne, getAccountId } from "@/lib/db";
 
 interface CourseDeployment {
-  course_id: string;
+  course_id: number;  // INT course_id
+  course_code: string;  // TEXT course_code
   title?: string;
   environment: string;
   is_active: boolean;
@@ -51,11 +52,12 @@ export async function GET(
     const deployments = await query<CourseDeployment>(
       `SELECT 
         cd.course_id,
+        c.course_code,
         c.title,
         cd.environment,
         cd.is_active
       FROM course_deployment cd
-      LEFT JOIN course c ON cd.course_id = c.course_id AND cd.account_id = c.account_id
+      LEFT JOIN course c ON cd.course_id = c.course_id
       WHERE cd.bot_id = $1 AND cd.account_id = $2
       ORDER BY cd.created_at DESC`,
       [botIdNum, accountId]
@@ -63,8 +65,9 @@ export async function GET(
 
     // Форматируем результат для фронтенда
     const courses = deployments.map((deployment) => ({
-      id: deployment.course_id,
-      title: deployment.title || deployment.course_id,
+      id: deployment.course_code, // Используем course_code для URL
+      course_id: deployment.course_id, // Добавляем INT course_id для внутренних операций
+      title: deployment.title || deployment.course_code,
       environment: deployment.environment,
       is_active: deployment.is_active,
     }));
@@ -118,6 +121,14 @@ export async function POST(
       );
     }
 
+    // Логируем входящие данные для отладки
+    console.log("Attaching courses:", {
+      botId: botIdNum,
+      accountId,
+      course_ids: body.course_ids,
+      environment: body.environment,
+    });
+
     // Проверяем существование бота
     const bot = await queryOne<{ bot_id: number }>(
       `SELECT bot_id FROM bot WHERE bot_id = $1 AND account_id = $2`,
@@ -138,72 +149,111 @@ export async function POST(
     const attachedCourses: Array<{ course_id: string; deployment_id: number }> = [];
     const errors: Array<{ course_id: string; error: string }> = [];
 
-    // Прикрепляем каждый курс
-    for (const courseId of body.course_ids) {
+    // Прикрепляем каждый курс (course_ids содержат course_code)
+    for (const courseCode of body.course_ids) {
       try {
-        // Проверяем, что курс существует и принадлежит аккаунту
-        const course = await queryOne<{ course_id: string }>(
-          `SELECT course_id FROM course WHERE course_id = $1 AND account_id = $2`,
-          [courseId, accountId]
+        // Проверяем, что курс существует по course_code и принадлежит аккаунту
+        let course = await queryOne<{ course_id: number; course_code: string }>(
+          `SELECT course_id, course_code FROM course WHERE course_code = $1 AND account_id = $2`,
+          [courseCode, accountId]
         );
 
+        // Если не найден по course_code, пробуем найти по старому course_id (обратная совместимость)
         if (!course) {
+          // Проверяем, может быть это старый формат где course_id был TEXT
+          const oldCourse = await queryOne<{ course_id: any }>(
+            `SELECT course_id FROM course WHERE course_id::text = $1 AND account_id = $2`,
+            [courseCode, accountId]
+          );
+          
+          if (oldCourse) {
+            // Если найден старый курс, используем его course_id как course_code
+            course = await queryOne<{ course_id: number; course_code: string }>(
+              `SELECT course_id, course_code FROM course WHERE course_id = $1 AND account_id = $2`,
+              [oldCourse.course_id, accountId]
+            );
+          }
+        }
+
+        if (!course) {
+          console.error(`Course not found: course_code=${courseCode}, account_id=${accountId}`);
+          // Проверяем, есть ли вообще курсы в аккаунте
+          const anyCourse = await queryOne<{ count: number }>(
+            `SELECT COUNT(*) as count FROM course WHERE account_id = $1`,
+            [accountId]
+          );
+          console.error(`Total courses in account: ${anyCourse?.count || 0}`);
+          
           errors.push({
-            course_id: courseId,
-            error: "Course not found",
+            course_id: courseCode,
+            error: `Course "${courseCode}" not found in account ${accountId}`,
           });
           continue;
         }
+
+        console.log(`Found course: course_code=${course.course_code}, course_id=${course.course_id}`);
 
         // Проверяем, не прикреплен ли уже курс к этому боту в этом окружении
         const existingDeployment = await queryOne<{ deployment_id: number }>(
           `SELECT deployment_id 
           FROM course_deployment 
           WHERE bot_id = $1 AND course_id = $2 AND account_id = $3 AND environment = $4`,
-          [botIdNum, courseId, accountId, environment]
+          [botIdNum, course.course_id, accountId, environment]
         );
 
         if (existingDeployment) {
           // Курс уже прикреплен, пропускаем
           attachedCourses.push({
-            course_id: courseId,
+            course_id: courseCode, // Возвращаем course_code для обратной совместимости
             deployment_id: existingDeployment.deployment_id,
           });
           continue;
         }
 
-        // Создаем деплоймент
-        const result = await query<{ deployment_id: number; course_id: string }>(
+        // Создаем деплоймент используя INT course_id
+        const result = await query<{ deployment_id: number; course_id: number }>(
           `INSERT INTO course_deployment (
             course_id,
+            course_code,
             account_id,
             bot_id,
             environment,
             is_active
-          ) VALUES ($1, $2, $3, $4, $5)
+          ) VALUES ($1, $2, $3, $4, $5, $6)
           RETURNING deployment_id, course_id`,
-          [courseId, accountId, botIdNum, environment, true]
+          [course.course_id, courseCode, accountId, botIdNum, environment, true]
         );
 
         if (result.length > 0) {
           attachedCourses.push({
-            course_id: result[0].course_id,
+            course_id: courseCode, // Возвращаем course_code для обратной совместимости
             deployment_id: result[0].deployment_id,
           });
         }
       } catch (error) {
-        console.error(`Error attaching course ${courseId}:`, error);
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        console.error(`Error attaching course ${courseCode}:`, error);
+        console.error("Error details:", {
+          courseCode,
+          accountId,
+          botId: botIdNum,
+          environment,
+          error: errorMessage,
+          stack: error instanceof Error ? error.stack : undefined,
+        });
         errors.push({
-          course_id: courseId,
-          error: error instanceof Error ? error.message : "Unknown error",
+          course_id: courseCode,
+          error: errorMessage,
         });
       }
     }
 
     if (errors.length > 0 && attachedCourses.length === 0) {
+      const errorMessages = errors.map(e => `Course "${e.course_id}": ${e.error}`).join("; ");
       return NextResponse.json(
         {
           error: "Failed to attach courses",
+          message: errorMessages,
           errors,
         },
         { status: 400 }

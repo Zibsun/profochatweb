@@ -21,16 +21,16 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const courseId = params.id;
+    const courseCode = params.id; // Это course_code для URL
     const accountId = getAccountId(request);
 
-    // 1. Сначала проверяем, существует ли курс в БД
-    const dbCourse = await getCourseFromDB(courseId, accountId);
+    // 1. Сначала проверяем, существует ли курс в БД по course_code
+    const dbCourse = await getCourseFromDB(courseCode, accountId);
 
     if (dbCourse) {
       // Курс найден в БД
-      // Загружаем элементы курса
-      const elements = await getCourseElementsFromDB(courseId, accountId);
+      // Загружаем элементы курса используя INT course_id
+      const elements = await getCourseElementsFromDB(dbCourse.course_id, accountId);
 
       // Преобразуем элементы в YAML структуру
       const yamlContent = elementsToYaml(elements);
@@ -43,7 +43,9 @@ export async function GET(
 
       return NextResponse.json({
         course: {
-          course_id: dbCourse.course_id,
+          course_id: dbCourse.course_code, // Возвращаем course_code для обратной совместимости
+          course_code: dbCourse.course_code,
+          course_id_int: dbCourse.course_id, // Добавляем INT course_id
           path: 'db',
           element: metadata.element,
           restricted: metadata.restricted,
@@ -146,7 +148,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const courseId = params.id;
+    const courseCode = params.id; // Это course_code для URL
     const accountId = getAccountId(request);
     const body = await request.json();
 
@@ -165,15 +167,15 @@ export async function PUT(
     const { convertBlocksToYaml } = await import('@/lib/course-editor/yaml-converter');
     const yamlContent = convertBlocksToYaml(body.blocks);
 
-    // Проверяем, существует ли курс в БД
-    const dbCourse = await getCourseFromDB(courseId, accountId);
+    // Проверяем, существует ли курс в БД по course_code
+    const dbCourse = await getCourseFromDB(courseCode, accountId);
 
     if (dbCourse || body.save_to_db === true) {
       // Сохраняем в БД
       const { saveCourseToDB } = await import('@/lib/course-editor/db-utils');
       
       await saveCourseToDB(
-        courseId,
+        courseCode,  // Используем courseCode вместо courseId
         accountId,
         yamlContent,
         {
@@ -183,12 +185,13 @@ export async function PUT(
           ban_enabled: body.settings?.ban_enabled,
           ban_text: body.settings?.ban_text,
         },
-        body.settings?.title,
+        body.settings?.title,  // Передаем title для сохранения
         body.settings?.description
       );
 
       return NextResponse.json({
-        course_id: courseId,
+        course_id: courseCode,  // Возвращаем course_code для обратной совместимости
+        course_code: courseCode,
         path: 'db',
         saved_at: new Date().toISOString(),
         message: 'Course saved successfully to database',
@@ -197,7 +200,7 @@ export async function PUT(
     }
 
     // Сохраняем в YAML (legacy режим)
-    const courseMetadata = getCourseMetadata(courseId);
+    const courseMetadata = getCourseMetadata(courseCode);
     if (!courseMetadata) {
       return NextResponse.json(
         {

@@ -21,6 +21,8 @@ export interface BotInternalSettings {
 export interface ConnectedCourse {
   id: string;
   title: string;
+  environment?: string;
+  is_active?: boolean;
 }
 
 export interface BotDetails {
