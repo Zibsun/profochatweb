@@ -56,3 +56,62 @@ logs/
 # Backup files
 *.backup
 *.bak
+
+# Next.js generated files
+next-env.d.ts
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Vercel
+.vercel/
+
+# Turbo
+.turbo/
+
+# Yarn
+.yarn/
+.pnp.*
+
+# TypeScript
+*.tsbuildinfo
+
+# Python specific
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
