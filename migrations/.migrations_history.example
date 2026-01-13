@@ -1,0 +1,5 @@
+# Example migration history file
+# This file is git-ignored. The actual history is stored in the database.
+# Format: VERSION|DESCRIPTION|APPLIED_AT|APPLIED_BY
+
+0001|Create schema_migrations table|2024-01-01 12:00:00|system

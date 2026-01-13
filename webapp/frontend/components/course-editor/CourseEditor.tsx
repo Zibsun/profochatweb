@@ -230,6 +230,16 @@ export function CourseEditor({ courseId }: CourseEditorProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isNewCourse, setIsNewCourse] = useState(!courseId);
+  const [courseSource, setCourseSource] = useState<'database' | 'yaml' | 'database_old' | null>(null);
+  const [courseMetadata, setCourseMetadata] = useState<{
+    title?: string | null;
+    description?: string | null;
+    element?: string;
+    restricted?: boolean | string;
+    decline_text?: string;
+    ban_enabled?: boolean | string;
+    ban_text?: string;
+  } | null>(null);
 
   // Refs для прокрутки к блокам в средней панели
   const blockRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -260,9 +270,19 @@ export function CourseEditor({ courseId }: CourseEditorProps) {
       setBlocks(data.blocks || []);
       setCourseTitle(data.course?.course_id || id);
       setIsNewCourse(false);
+      setCourseSource(data.source || 'yaml');
+      setCourseMetadata({
+        title: data.course?.title,
+        description: data.course?.description,
+        element: data.course?.element,
+        restricted: data.course?.restricted,
+        decline_text: data.course?.decline_text,
+        ban_enabled: data.course?.ban_enabled,
+        ban_text: data.course?.ban_text,
+      });
       toast({
         title: "Курс загружен",
-        description: `Курс "${id}" успешно загружен`,
+        description: `Курс "${id}" успешно загружен${data.source === 'database' ? ' из базы данных' : ''}`,
       });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Неизвестная ошибка";
@@ -621,8 +641,16 @@ export function CourseEditor({ courseId }: CourseEditorProps) {
         course_id: courseId || courseTitle || `course_${Date.now()}`,
         blocks,
         settings: {
-          // Можно добавить настройки курса здесь
+          title: courseMetadata?.title,
+          description: courseMetadata?.description,
+          element: courseMetadata?.element,
+          restricted: courseMetadata?.restricted,
+          decline_text: courseMetadata?.decline_text,
+          ban_enabled: courseMetadata?.ban_enabled,
+          ban_text: courseMetadata?.ban_text,
         },
+        // Если курс из БД или новый курс, сохраняем в БД
+        save_to_db: courseSource === 'database' || isNewCourse || undefined,
       };
 
       const response = await fetch(url, {
@@ -640,15 +668,23 @@ export function CourseEditor({ courseId }: CourseEditorProps) {
 
       const data = await response.json();
       
+      // Обновляем источник курса
+      if (data.source) {
+        setCourseSource(data.source);
+      }
+      
       // Если это новый курс, обновляем URL
       if (isNewCourse && data.course_id) {
         window.history.replaceState(null, "", `/course-editor/${data.course_id}`);
         setIsNewCourse(false);
+        setCourseSource('database'); // Новые курсы сохраняются в БД
       }
 
       toast({
         title: "Курс сохранен",
-        description: "Черновик успешно сохранен",
+        description: data.source === 'database' 
+          ? "Курс успешно сохранен в базу данных"
+          : "Черновик успешно сохранен",
       });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Неизвестная ошибка";
@@ -826,6 +862,17 @@ export function CourseEditor({ courseId }: CourseEditorProps) {
             placeholder={isNewCourse ? "Введите название курса" : ""}
             disabled={loading}
           />
+          {courseSource && (
+            <span className={`text-xs px-2 py-1 rounded ${
+              courseSource === 'database' 
+                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                : courseSource === 'database_old'
+                ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+            }`}>
+              {courseSource === 'database' ? 'БД' : courseSource === 'database_old' ? 'БД (старая схема)' : 'YAML'}
+            </span>
+          )}
           {error && (
             <div className="flex items-center gap-2 text-destructive text-sm">
               <AlertCircle className="w-4 h-4" />

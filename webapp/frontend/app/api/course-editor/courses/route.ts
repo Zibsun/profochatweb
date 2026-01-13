@@ -11,36 +11,66 @@ import {
   getExtCoursesInfo,
 } from '@/lib/course-editor/yaml-utils';
 import { convertBlocksToYaml } from '@/lib/course-editor/yaml-converter';
+import { getCoursesFromDB } from '@/lib/course-editor/db-utils';
+import { getAccountId } from '@/lib/db';
 import path from 'path';
 import fs from 'fs';
 
 /**
  * GET /api/course-editor/courses
- * Возвращает список всех курсов из courses.yml
+ * Возвращает список всех курсов из БД и courses.yml
  * Включает информацию о ext_courses и идентификацию курсов из БД
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const courses = loadCoursesYaml();
-    const hasExt = hasExtCourses(courses);
-    const extCoursesInfo = hasExt ? getExtCoursesInfo(courses) : null;
+    const accountId = getAccountId(request);
 
-    // Преобразуем в массив с метаданными
-    const coursesList = Object.entries(courses)
-      // Исключаем ext_courses из списка курсов (это служебный ключ)
-      .filter(([courseId]) => courseId !== 'ext_courses')
-      .map(([courseId, courseInfo]) => ({
-        course_id: courseId,
-        path: courseInfo.path,
-        element: courseInfo.element,
-        restricted: courseInfo.restricted,
-        decline_text: courseInfo.decline_text,
-        ban_enabled: courseInfo.ban_enabled,
-        ban_text: courseInfo.ban_text,
-        // Дополнительная информация для идентификации курсов из БД
-        is_from_db: courseInfo.path === 'db',
-        is_from_ext_courses: hasExt && extCoursesInfo?.path === 'db' && courseInfo.path === 'db',
-      }));
+    // 1. Загружаем курсы из БД
+    const dbCourses = await getCoursesFromDB(accountId);
+
+    // 2. Загружаем курсы из YAML (legacy)
+    const yamlCourses = loadCoursesYaml();
+    const hasExt = hasExtCourses(yamlCourses);
+    const extCoursesInfo = hasExt ? getExtCoursesInfo(yamlCourses) : null;
+
+    // 3. Формируем список курсов из БД
+    const coursesList = dbCourses.map((course) => {
+      const metadata = course.metadata || {};
+      return {
+        course_id: course.course_id,
+        path: 'db',
+        title: course.title,
+        description: course.description,
+        element: metadata.element,
+        restricted: metadata.restricted,
+        decline_text: metadata.decline_text,
+        ban_enabled: metadata.ban_enabled,
+        ban_text: metadata.ban_text,
+        is_from_db: true,
+        is_active: course.is_active,
+        source: 'database',
+      };
+    });
+
+    // 4. Добавляем курсы из YAML (если их нет в БД)
+    const dbCourseIds = new Set(dbCourses.map((c) => c.course_id));
+    for (const [courseId, courseInfo] of Object.entries(yamlCourses)) {
+      if (courseId === 'ext_courses') continue;
+      if (!dbCourseIds.has(courseId)) {
+        coursesList.push({
+          course_id: courseId,
+          path: courseInfo.path,
+          element: courseInfo.element,
+          restricted: courseInfo.restricted,
+          decline_text: courseInfo.decline_text,
+          ban_enabled: courseInfo.ban_enabled,
+          ban_text: courseInfo.ban_text,
+          is_from_db: courseInfo.path === 'db',
+          is_from_ext_courses: hasExt && extCoursesInfo?.path === 'db' && courseInfo.path === 'db',
+          source: courseInfo.path === 'db' ? 'database_old' : 'yaml',
+        });
+      }
+    }
 
     return NextResponse.json({
       courses: coursesList,
@@ -48,7 +78,7 @@ export async function GET() {
         enabled: true,
         source: extCoursesInfo?.path || 'db',
         note: extCoursesInfo?.path === 'db' 
-          ? 'Courses from database are loaded via ext_courses. They may not appear in this list if not yet loaded.'
+          ? 'Courses from database (old schema) are loaded via ext_courses. They may not appear in this list if not yet loaded.'
           : `Courses are loaded from ${extCoursesInfo?.path}`,
       } : null,
     });
@@ -66,10 +96,11 @@ export async function GET() {
 
 /**
  * POST /api/course-editor/courses
- * Создает новый курс
+ * Создает новый курс в БД или YAML
  */
 export async function POST(request: NextRequest) {
   try {
+    const accountId = getAccountId(request);
     const body = await request.json();
 
     // Валидация входных данных
@@ -107,6 +138,62 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Преобразуем блоки в YAML
+    const yamlContent = convertBlocksToYaml(body.blocks);
+
+    // Определяем, куда сохранять: БД или YAML
+    const saveToDB = body.save_to_db !== false; // По умолчанию сохраняем в БД
+
+    if (saveToDB) {
+      // Сохраняем в БД
+      const { courseExistsInDB, saveCourseToDB } = await import('@/lib/course-editor/db-utils');
+
+      // Проверяем, не существует ли уже курс в БД
+      if (await courseExistsInDB(courseId, accountId)) {
+        return NextResponse.json(
+          {
+            error: 'Course already exists',
+            message: `Course with ID "${courseId}" already exists in database`,
+          },
+          { status: 409 }
+        );
+      }
+
+      // Сохраняем в БД
+      await saveCourseToDB(
+        courseId,
+        accountId,
+        yamlContent,
+        {
+          element: body.settings?.element,
+          restricted: body.settings?.restricted,
+          decline_text: body.settings?.decline_text,
+          ban_enabled: body.settings?.ban_enabled,
+          ban_text: body.settings?.ban_text,
+        },
+        body.settings?.title,
+        body.settings?.description
+      );
+
+      return NextResponse.json({
+        course_id: courseId,
+        path: 'db',
+        course: {
+          course_id: courseId,
+          path: 'db',
+          title: body.settings?.title,
+          description: body.settings?.description,
+          element: body.settings?.element,
+          restricted: body.settings?.restricted,
+          decline_text: body.settings?.decline_text,
+          ban_enabled: body.settings?.ban_enabled,
+          ban_text: body.settings?.ban_text,
+        },
+        source: 'database',
+      }, { status: 201 });
+    }
+
+    // Сохраняем в YAML (legacy режим)
     const courses = loadCoursesYaml();
 
     // Проверяем, не существует ли уже курс с таким ID
@@ -114,14 +201,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Course already exists',
-          message: `Course with ID "${courseId}" already exists`,
+          message: `Course with ID "${courseId}" already exists in courses.yml`,
         },
         { status: 409 }
       );
     }
 
     // Определяем путь к файлу курса
-    // Если путь указан в body.path, используем его, иначе генерируем по умолчанию
     let coursePath = body.path || `${courseId}.yml`;
     
     // Валидация пути
@@ -141,9 +227,6 @@ export async function POST(request: NextRequest) {
     
     const PROJECT_ROOT = path.join(process.cwd(), '..', '..', '..');
     const courseFilePath = path.join(PROJECT_ROOT, coursePath);
-
-    // Преобразуем блоки в YAML
-    const yamlContent = convertBlocksToYaml(body.blocks);
 
     // Сохраняем YAML файл курса
     saveCourseYaml(courseFilePath, yamlContent);
@@ -169,6 +252,7 @@ export async function POST(request: NextRequest) {
         ban_enabled: body.settings?.ban_enabled,
         ban_text: body.settings?.ban_text,
       },
+      source: 'yaml',
     }, { status: 201 });
   } catch (error) {
     console.error('Error creating course:', error);

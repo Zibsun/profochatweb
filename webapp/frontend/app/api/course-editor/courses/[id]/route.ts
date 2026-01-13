@@ -5,10 +5,16 @@ import {
   loadCourseYaml,
 } from '@/lib/course-editor/yaml-utils';
 import { convertYamlToBlocks } from '@/lib/course-editor/yaml-converter';
+import {
+  getCourseFromDB,
+  getCourseElementsFromDB,
+  elementsToYaml,
+} from '@/lib/course-editor/db-utils';
+import { getAccountId } from '@/lib/db';
 
 /**
  * GET /api/course-editor/courses/{course_id}
- * Загружает курс из YAML файла
+ * Загружает курс из базы данных или YAML файла
  */
 export async function GET(
   request: NextRequest,
@@ -16,20 +22,57 @@ export async function GET(
 ) {
   try {
     const courseId = params.id;
+    const accountId = getAccountId(request);
 
-    // Получаем метаданные курса из courses.yml
+    // 1. Сначала проверяем, существует ли курс в БД
+    const dbCourse = await getCourseFromDB(courseId, accountId);
+
+    if (dbCourse) {
+      // Курс найден в БД
+      // Загружаем элементы курса
+      const elements = await getCourseElementsFromDB(courseId, accountId);
+
+      // Преобразуем элементы в YAML структуру
+      const yamlContent = elementsToYaml(elements);
+
+      // Преобразуем YAML в блоки редактора
+      const blocks = convertYamlToBlocks(yamlContent);
+
+      // Извлекаем метаданные
+      const metadata = dbCourse.metadata || {};
+
+      return NextResponse.json({
+        course: {
+          course_id: dbCourse.course_id,
+          path: 'db',
+          element: metadata.element,
+          restricted: metadata.restricted,
+          decline_text: metadata.decline_text,
+          ban_enabled: metadata.ban_enabled,
+          ban_text: metadata.ban_text,
+          title: dbCourse.title,
+          description: dbCourse.description,
+          is_active: dbCourse.is_active,
+        },
+        yaml_content: yamlContent,
+        blocks,
+        source: 'database',
+      });
+    }
+
+    // 2. Курс не найден в БД, пробуем загрузить из YAML (legacy режим)
     const courseMetadata = getCourseMetadata(courseId);
     if (!courseMetadata) {
       return NextResponse.json(
         {
           error: 'Course not found',
-          message: `Course with ID "${courseId}" not found in courses.yml`,
+          message: `Course with ID "${courseId}" not found in database or courses.yml`,
         },
         { status: 404 }
       );
     }
 
-    // Проверяем, не хранится ли курс в БД
+    // Проверяем, не хранится ли курс в БД (старая схема с bot_name)
     if (courseMetadata.path === 'db') {
       const { hasExtCourses, getExtCoursesInfo } = await import('@/lib/course-editor/yaml-utils');
       const courses = await import('@/lib/course-editor/yaml-utils').then(m => m.loadCoursesYaml());
@@ -37,12 +80,12 @@ export async function GET(
       const extCoursesInfo = isFromExtCourses ? getExtCoursesInfo(courses) : null;
       
       const message = isFromExtCourses && extCoursesInfo?.path === 'db'
-        ? `Course "${courseId}" is loaded from database via ext_courses and cannot be edited through the editor. Please export it to YAML first.`
-        : `Course "${courseId}" is stored in database and cannot be edited through the editor. Please export it to YAML first.`;
+        ? `Course "${courseId}" is loaded from database via ext_courses (old schema). Please migrate it to the new database schema first.`
+        : `Course "${courseId}" is stored in database (old schema). Please migrate it to the new database schema first.`;
       
       return NextResponse.json(
         {
-          error: 'Course stored in database',
+          error: 'Course stored in database (old schema)',
           message,
           is_from_ext_courses: isFromExtCourses && extCoursesInfo?.path === 'db',
         },
@@ -80,6 +123,7 @@ export async function GET(
       },
       yaml_content: yamlContent,
       blocks,
+      source: 'yaml',
     });
   } catch (error) {
     console.error('Error loading course:', error);
@@ -95,7 +139,7 @@ export async function GET(
 
 /**
  * PUT /api/course-editor/courses/{course_id}
- * Сохраняет курс в YAML файл
+ * Сохраняет курс в базу данных или YAML файл
  */
 export async function PUT(
   request: NextRequest,
@@ -103,6 +147,7 @@ export async function PUT(
 ) {
   try {
     const courseId = params.id;
+    const accountId = getAccountId(request);
     const body = await request.json();
 
     // Валидация входных данных
@@ -116,7 +161,42 @@ export async function PUT(
       );
     }
 
-    // Получаем метаданные курса
+    // Преобразуем блоки в YAML
+    const { convertBlocksToYaml } = await import('@/lib/course-editor/yaml-converter');
+    const yamlContent = convertBlocksToYaml(body.blocks);
+
+    // Проверяем, существует ли курс в БД
+    const dbCourse = await getCourseFromDB(courseId, accountId);
+
+    if (dbCourse || body.save_to_db === true) {
+      // Сохраняем в БД
+      const { saveCourseToDB } = await import('@/lib/course-editor/db-utils');
+      
+      await saveCourseToDB(
+        courseId,
+        accountId,
+        yamlContent,
+        {
+          element: body.settings?.element,
+          restricted: body.settings?.restricted,
+          decline_text: body.settings?.decline_text,
+          ban_enabled: body.settings?.ban_enabled,
+          ban_text: body.settings?.ban_text,
+        },
+        body.settings?.title,
+        body.settings?.description
+      );
+
+      return NextResponse.json({
+        course_id: courseId,
+        path: 'db',
+        saved_at: new Date().toISOString(),
+        message: 'Course saved successfully to database',
+        source: 'database',
+      });
+    }
+
+    // Сохраняем в YAML (legacy режим)
     const courseMetadata = getCourseMetadata(courseId);
     if (!courseMetadata) {
       return NextResponse.json(
@@ -128,7 +208,7 @@ export async function PUT(
       );
     }
 
-    // Проверяем, не хранится ли курс в БД
+    // Проверяем, не хранится ли курс в БД (старая схема)
     if (courseMetadata.path === 'db') {
       const { hasExtCourses, getExtCoursesInfo } = await import('@/lib/course-editor/yaml-utils');
       const courses = await import('@/lib/course-editor/yaml-utils').then(m => m.loadCoursesYaml());
@@ -136,12 +216,12 @@ export async function PUT(
       const extCoursesInfo = isFromExtCourses ? getExtCoursesInfo(courses) : null;
       
       const message = isFromExtCourses && extCoursesInfo?.path === 'db'
-        ? `Course "${courseId}" is loaded from database via ext_courses and cannot be edited through the editor.`
-        : `Course "${courseId}" is stored in database and cannot be edited through the editor.`;
+        ? `Course "${courseId}" is loaded from database via ext_courses (old schema). Please migrate it to the new database schema first.`
+        : `Course "${courseId}" is stored in database (old schema). Please migrate it to the new database schema first.`;
       
       return NextResponse.json(
         {
-          error: 'Course stored in database',
+          error: 'Course stored in database (old schema)',
           message,
           is_from_ext_courses: isFromExtCourses && extCoursesInfo?.path === 'db',
         },
@@ -161,12 +241,8 @@ export async function PUT(
       );
     }
 
-    // Импортируем функции преобразования и сохранения
-    const { convertBlocksToYaml } = await import('@/lib/course-editor/yaml-converter');
+    // Импортируем функции сохранения
     const { saveCourseYaml, updateCourseMetadata } = await import('@/lib/course-editor/yaml-utils');
-
-    // Преобразуем блоки в YAML
-    const yamlContent = convertBlocksToYaml(body.blocks);
 
     // Сохраняем YAML файл курса
     saveCourseYaml(courseFilePath, yamlContent);
@@ -187,6 +263,7 @@ export async function PUT(
       path: courseMetadata.path,
       saved_at: new Date().toISOString(),
       message: 'Draft saved successfully',
+      source: 'yaml',
     });
   } catch (error) {
     console.error('Error saving course:', error);
@@ -202,7 +279,7 @@ export async function PUT(
 
 /**
  * DELETE /api/course-editor/courses/{course_id}
- * Удаляет курс (опционально)
+ * Удаляет курс из БД или YAML
  */
 export async function DELETE(
   request: NextRequest,
@@ -210,20 +287,49 @@ export async function DELETE(
 ) {
   try {
     const courseId = params.id;
+    const accountId = getAccountId(request);
 
-    // Получаем метаданные курса
+    // Проверяем, существует ли курс в БД
+    const dbCourse = await getCourseFromDB(courseId, accountId);
+
+    if (dbCourse) {
+      // Удаляем из БД
+      const { query } = await import('@/lib/db');
+      
+      // Удаляем элементы курса
+      await query(
+        `DELETE FROM course_element
+         WHERE course_id = $1 AND account_id = $2`,
+        [courseId, accountId]
+      );
+
+      // Удаляем метаданные курса
+      await query(
+        `DELETE FROM course
+         WHERE course_id = $1 AND account_id = $2`,
+        [courseId, accountId]
+      );
+
+      return NextResponse.json({
+        course_id: courseId,
+        message: 'Course deleted successfully from database',
+        source: 'database',
+      });
+    }
+
+    // Удаляем из YAML (legacy режим)
     const courseMetadata = getCourseMetadata(courseId);
     if (!courseMetadata) {
       return NextResponse.json(
         {
           error: 'Course not found',
-          message: `Course with ID "${courseId}" not found in courses.yml`,
+          message: `Course with ID "${courseId}" not found in database or courses.yml`,
         },
         { status: 404 }
       );
     }
 
-    // Проверяем, является ли курс из БД
+    // Проверяем, является ли курс из БД (старая схема)
     const isFromDb = courseMetadata.path === 'db';
     const { loadCoursesYaml, saveCoursesYaml, hasExtCourses, getExtCoursesInfo } = await import('@/lib/course-editor/yaml-utils');
     const courses = loadCoursesYaml();
@@ -231,13 +337,12 @@ export async function DELETE(
     const extCoursesInfo = isFromExtCourses ? getExtCoursesInfo(courses) : null;
     const isFromExtCoursesDb = isFromExtCourses && extCoursesInfo?.path === 'db' && isFromDb;
 
-    // Предупреждение для курсов из БД
+    // Предупреждение для курсов из БД (старая схема)
     if (isFromDb) {
       const warning = isFromExtCoursesDb
-        ? 'Course is loaded from database via ext_courses. Removing it from courses.yml will not delete it from the database.'
-        : 'Course is stored in database. Removing it from courses.yml will not delete it from the database.';
+        ? 'Course is loaded from database via ext_courses (old schema). Removing it from courses.yml will not delete it from the database.'
+        : 'Course is stored in database (old schema). Removing it from courses.yml will not delete it from the database.';
       
-      // Можно продолжить удаление из courses.yml, но предупредить пользователя
       console.warn(`Warning for course ${courseId}: ${warning}`);
     }
 
@@ -270,9 +375,10 @@ export async function DELETE(
       course_id: courseId,
       message: 'Course deleted successfully',
       warning: isFromDb ? (isFromExtCoursesDb
-        ? 'Course remains in database. It can be added back via ext_courses.'
-        : 'Course remains in database.') : undefined,
+        ? 'Course remains in database (old schema). It can be added back via ext_courses.'
+        : 'Course remains in database (old schema).') : undefined,
       file_deleted: courseFilePath && !isFromDb,
+      source: 'yaml',
     });
   } catch (error) {
     console.error('Error deleting course:', error);

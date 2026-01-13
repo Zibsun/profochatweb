@@ -1,0 +1,12 @@
+# Migration history (should be in database, not in git)
+.migrations_history
+*.log
+
+# Backup files
+*.dump
+*.sql.bak
+
+# Temporary files
+*.tmp
+*.swp
+*~

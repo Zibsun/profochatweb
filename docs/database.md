@@ -4,6 +4,20 @@
 
 Приложение использует PostgreSQL в качестве базы данных для хранения информации о курсах, пользователях, сессиях прохождения курсов и истории взаимодействий.
 
+**Архитектура:** База данных использует мультитенантную SaaS архитектуру, где все данные изолированы по аккаунтам (`account_id`). Каждый аккаунт может иметь несколько ботов, курсов и пользователей.
+
+## Мультитенантная архитектура (SaaS)
+
+База данных поддерживает мультитенантность через систему аккаунтов:
+
+- **Аккаунты (`account`)** - верхний уровень изоляции данных
+- **Участники аккаунта (`account_member`)** - пользователи, принадлежащие аккаунту
+- **Боты (`bot`)** - Telegram боты, принадлежащие аккаунту
+- **Курсы (`course`)** - уникальны в рамках аккаунта (`course_id`, `account_id`)
+- **Деплойменты (`course_deployment`)** - связь курсов с ботами в рамках аккаунта
+
+Все основные таблицы содержат поле `account_id` для изоляции данных между аккаунтами.
+
 ## Подключение к базе данных
 
 ### Конфигурация
@@ -64,6 +78,146 @@ def get_connection():
 
 ## Структура базы данных
 
+### Таблица `account`
+
+Центральная таблица для мультитенантной архитектуры. Представляет организацию или клиента.
+
+**Структура:**
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `account_id` | int4 (PK, AUTO) | Уникальный идентификатор аккаунта |
+| `name` | text | Название аккаунта |
+| `slug` | text (UNIQUE) | URL-friendly идентификатор аккаунта |
+| `plan` | text | Тарифный план (по умолчанию 'free') |
+| `created_at` | timestamp | Дата создания аккаунта |
+| `updated_at` | timestamp | Дата последнего обновления |
+| `is_active` | boolean | Флаг активности аккаунта |
+| `settings` | jsonb | Дополнительные настройки аккаунта |
+
+**Назначение:**
+- Изоляция данных между клиентами
+- Управление тарифными планами
+- Хранение настроек на уровне аккаунта
+
+**Особенности:**
+- При миграции создается аккаунт по умолчанию с `account_id = 1`
+- Все существующие данные автоматически привязываются к аккаунту по умолчанию
+
+### Таблица `account_member`
+
+Таблица для управления участниками аккаунта.
+
+**Структура:**
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `account_member_id` | int4 (PK, AUTO) | Уникальный идентификатор |
+| `account_id` | int4 (FK → account) | Идентификатор аккаунта |
+| `telegram_user_id` | int8 | Telegram user ID участника |
+| `telegram_username` | text | Telegram username участника |
+| `role` | text | Роль участника (по умолчанию 'member') |
+| `created_at` | timestamp | Дата добавления участника |
+| `last_login_at` | timestamp | Дата последнего входа |
+| `is_active` | boolean | Флаг активности участника |
+
+**Уникальные ограничения:**
+- `(account_id, telegram_user_id)` - один пользователь может быть участником аккаунта только один раз
+
+**Назначение:**
+- Управление доступом пользователей к аккаунту
+- Контроль ролей и прав доступа
+- Отслеживание активности участников
+
+### Таблица `bot`
+
+Таблица для управления Telegram ботами на уровне аккаунта.
+
+**Структура:**
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `bot_id` | int4 (PK, AUTO) | Уникальный идентификатор бота |
+| `account_id` | int4 (FK → account) | Идентификатор аккаунта |
+| `bot_name` | text | Имя бота (уникально в рамках аккаунта) |
+| `bot_token` | text (UNIQUE) | Telegram bot token |
+| `display_name` | text | Отображаемое имя бота |
+| `description` | text | Описание бота |
+| `created_at` | timestamp | Дата создания записи |
+| `updated_at` | timestamp | Дата последнего обновления |
+| `is_active` | boolean | Флаг активности бота |
+| `settings` | jsonb | Дополнительные настройки бота |
+
+**Уникальные ограничения:**
+- `(account_id, bot_name)` - имя бота уникально в рамках аккаунта
+- `bot_token` - токен бота уникален глобально
+
+**Назначение:**
+- Централизованное управление ботами
+- Изоляция ботов по аккаунтам
+- Хранение токенов и настроек ботов
+
+**Миграция:**
+- При миграции существующие боты из `run.botname` и `course.bot_name` автоматически создаются в этой таблице
+- Токены ботов устанавливаются как временные (`temp_<bot_name>_<hash>`) и требуют ручного обновления
+
+### Таблица `course_deployment`
+
+Таблица для связи курсов с ботами (деплойменты).
+
+**Структура:**
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `deployment_id` | int4 (PK, AUTO) | Уникальный идентификатор деплоймента |
+| `course_id` | text | Идентификатор курса |
+| `account_id` | int4 (FK → account) | Идентификатор аккаунта |
+| `bot_id` | int4 (FK → bot) | Идентификатор бота |
+| `environment` | text | Окружение (по умолчанию 'prod') |
+| `is_active` | boolean | Флаг активности деплоймента |
+| `created_at` | timestamp | Дата создания деплоймента |
+| `updated_at` | timestamp | Дата последнего обновления |
+| `settings` | jsonb | Дополнительные настройки деплоймента |
+
+**Уникальные ограничения:**
+- `(bot_id, course_id, account_id, environment)` - один курс может быть развернут на одном боте в одном окружении только один раз
+
+**Назначение:**
+- Связь курсов с ботами
+- Поддержка разных окружений (prod, staging, dev)
+- Управление активностью деплойментов
+
+**Особенности:**
+- Один курс может быть развернут на нескольких ботах
+- Один бот может иметь несколько курсов
+- Поддержка разных окружений позволяет тестировать курсы перед продакшеном
+
+### Таблица `enrollment_token`
+
+Таблица для управления токенами доступа к курсам.
+
+**Структура:**
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `token_id` | int4 (PK, AUTO) | Уникальный идентификатор токена |
+| `deployment_id` | int4 (FK → course_deployment) | Идентификатор деплоймента |
+| `token` | text (UNIQUE) | Токен доступа (уникален глобально) |
+| `token_type` | text | Тип токена (по умолчанию 'public') |
+| `max_uses` | int4 | Максимальное количество использований (NULL = без ограничений) |
+| `current_uses` | int4 | Текущее количество использований |
+| `expires_at` | timestamp | Дата истечения токена (NULL = без ограничений) |
+| `created_at` | timestamp | Дата создания токена |
+| `created_by` | int8 | Telegram user ID создателя токена |
+| `is_active` | boolean | Флаг активности токена |
+| `metadata` | jsonb | Дополнительные метаданные |
+
+**Назначение:**
+- Управление доступом к курсам через токены
+- Ограничение количества использований
+- Контроль срока действия токенов
+- Поддержка приватных и публичных курсов
+
 ### Таблица `conversation`
 
 Основная таблица для хранения истории взаимодействий пользователей с элементами курсов.
@@ -85,6 +239,7 @@ def get_connection():
 | `maxscore` | float4 | Максимальный балл (NULL если не оценивается) |
 | `date_inserted` | timestamp | Дата и время создания записи (по умолчанию CURRENT_TIMESTAMP) |
 | `run_id` | int4 | Ссылка на сессию прохождения курса (FK → run.run_id) |
+| `account_id` | int4 (FK → account) | Идентификатор аккаунта (добавлено в SaaS миграции) |
 
 **Назначение:**
 - Хранение всех сообщений и ответов пользователей
@@ -110,12 +265,19 @@ def get_connection():
 | `run_id` | int4 (PK, AUTO) | Уникальный идентификатор сессии |
 | `chat_id` | int8 | Telegram chat ID пользователя |
 | `username` | text | Имя пользователя в Telegram |
-| `botname` | text | Имя бота (для мультиботовой архитектуры) |
+| `botname` | text | Имя бота (устаревшее, используйте `bot_id`) |
+| `bot_id` | int4 (FK → bot) | Идентификатор бота (добавлено в SaaS миграции) |
 | `course_id` | text | Идентификатор курса |
+| `account_id` | int4 (FK → account) | Идентификатор аккаунта (добавлено в SaaS миграции) |
+| `deployment_id` | int4 (FK → course_deployment) | Идентификатор деплоймента (добавлено в SaaS миграции) |
+| `token_id` | int4 (FK → enrollment_token) | Идентификатор токена доступа (добавлено в SaaS миграции) |
 | `date_inserted` | timestamp | Дата и время начала сессии (по умолчанию CURRENT_TIMESTAMP) |
 | `utm_source` | text | UTM метка источника (опционально) |
+| `utm_medium` | text | UTM метка медиума (опционально, добавлено в SaaS миграции) |
 | `utm_campaign` | text | UTM метка кампании (опционально) |
 | `is_ended` | bool | Флаг завершения курса (NULL по умолчанию) |
+| `ended_at` | timestamp | Дата и время завершения курса (добавлено в SaaS миграции) |
+| `is_active` | boolean | Флаг активности сессии (добавлено в SaaS миграции) |
 
 **Назначение:**
 - Отслеживание начала и завершения прохождения курса
@@ -143,7 +305,10 @@ def get_connection():
 | `is_waiting` | bool | Флаг активности ожидания |
 | `element_id` | text | Идентификатор элемента, который ожидается |
 | `course_id` | text | Идентификатор курса |
-| `botname` | text | Имя бота |
+| `botname` | text | Имя бота (устаревшее, используйте `bot_id`) |
+| `bot_id` | int4 (FK → bot) | Идентификатор бота (добавлено в SaaS миграции) |
+| `run_id` | int4 (FK → run) | Идентификатор сессии (добавлено в SaaS миграции) |
+| `account_id` | int4 (FK → account) | Идентификатор аккаунта (добавлено в SaaS миграции) |
 
 **Назначение:**
 - Управление элементами с задержкой отправки
@@ -170,13 +335,24 @@ def get_connection():
 | Поле | Тип | Описание |
 |------|-----|----------|
 | `course_id` | text (PK) | Идентификатор курса |
-| `bot_name` | text (PK) | Имя бота (составной первичный ключ) |
+| `bot_name` | text | Имя бота (устаревшее, используйте `course_deployment`) |
+| `account_id` | int4 (FK → account, PK) | Идентификатор аккаунта (составной первичный ключ) |
 | `creator_id` | int8 | Telegram chat ID создателя курса |
 | `date_created` | timestamp | Дата создания курса (по умолчанию CURRENT_TIMESTAMP) |
 | `yaml` | text | YAML-представление курса (опционально) |
+| `title` | text | Название курса (добавлено в SaaS миграции) |
+| `description` | text | Описание курса (добавлено в SaaS миграции) |
+| `updated_at` | timestamp | Дата последнего обновления (добавлено в SaaS миграции) |
+| `metadata` | jsonb | Дополнительные метаданные курса (добавлено в SaaS миграции) |
+| `is_active` | boolean | Флаг активности курса (добавлено в SaaS миграции) |
+
+**Уникальные ограничения:**
+- `(course_id, account_id)` - курс уникален в рамках аккаунта
 
 **Индексы:**
-- `idx_course_courseid_botname` на `(course_id, bot_name)`
+- `idx_course_account` на `(account_id)`
+- `idx_course_active` на `(account_id, is_active)`
+- `idx_course_created` на `(account_id, date_created DESC)`
 
 **Назначение:**
 - Хранение метаданных курсов
@@ -200,7 +376,8 @@ def get_connection():
 | `json` | text | JSON-строка с данными элемента |
 | `element_type` | text | Тип элемента |
 | `course_id` | text | Идентификатор курса |
-| `bot_name` | text | Имя бота |
+| `bot_name` | text | Имя бота (устаревшее, используйте `account_id`) |
+| `account_id` | int4 (FK → account) | Идентификатор аккаунта (добавлено в SaaS миграции) |
 
 **Назначение:**
 - Хранение элементов курсов, загруженных в БД
@@ -277,6 +454,10 @@ db.add_replace_course(
 | `courseparticipant_id` | int4 (PK, AUTO) | Уникальный идентификатор |
 | `course_id` | text | Идентификатор курса |
 | `username` | text | Имя пользователя в Telegram |
+| `account_id` | int4 (FK → account) | Идентификатор аккаунта (добавлено в SaaS миграции) |
+| `chat_id` | int8 | Telegram chat ID пользователя (добавлено в SaaS миграции) |
+| `added_at` | timestamp | Дата добавления участника (добавлено в SaaS миграции) |
+| `added_by` | int8 | Telegram user ID пользователя, добавившего участника (добавлено в SaaS миграции) |
 
 **Индексы:**
 - `idx_courseparticipants_2` на `(course_id, username)`
@@ -301,7 +482,8 @@ db.add_replace_course(
 | Поле | Тип | Описание |
 |------|-----|----------|
 | `bannedparticipant_id` | int4 (PK, AUTO) | Уникальный идентификатор |
-| `botname` | text | Имя бота |
+| `botname` | text | Имя бота (устаревшее, используйте `account_id`) |
+| `account_id` | int4 (FK → account) | Идентификатор аккаунта (добавлено в SaaS миграции) |
 | `chat_id` | int8 | Telegram chat ID пользователя |
 | `banned_at` | timestamp | Дата блокировки (по умолчанию CURRENT_TIMESTAMP) |
 | `ban_reason` | text | Причина блокировки |
@@ -334,7 +516,8 @@ db.add_replace_course(
 | Поле | Тип | Описание |
 |------|-----|----------|
 | `id` | int4 (PK) | Уникальный идентификатор |
-| `bot_name` | text | Имя бота |
+| `bot_name` | text | Имя бота (устаревшее, используйте `account_id`) |
+| `account_id` | int4 (FK → account) | Идентификатор аккаунта (добавлено в SaaS миграции, может быть NULL) |
 | `s_key` | text | Ключ настройки |
 | `s_value` | text | Значение настройки |
 
@@ -347,6 +530,38 @@ db.add_replace_course(
 
 **Пример использования:**
 - Хранение списка разрешенных создателей в записи с `s_key = 'allowed'`
+
+## Связи между таблицами (ER диаграмма)
+
+```
+account (1) ──< (N) account_member
+account (1) ──< (N) bot
+account (1) ──< (N) course
+account (1) ──< (N) course_element
+account (1) ──< (N) courseparticipants
+account (1) ──< (N) bannedparticipants
+account (1) ──< (N) gen_settings
+account (1) ──< (N) conversation
+account (1) ──< (N) run
+account (1) ──< (N) waiting_element
+
+bot (1) ──< (N) course_deployment
+bot (1) ──< (N) run
+
+course (1) ──< (N) course_deployment
+course (1) ──< (N) course_element
+course (1) ──< (N) courseparticipants
+course (1) ──< (N) conversation
+course (1) ──< (N) run
+
+course_deployment (1) ──< (N) enrollment_token
+course_deployment (1) ──< (N) run
+
+enrollment_token (1) ──< (N) run
+
+run (1) ──< (N) conversation
+run (1) ──< (N) waiting_element
+```
 
 ## Паттерны взаимодействия с базой данных
 
@@ -554,22 +769,72 @@ def add_replace_course(course_id, course_data, bot_name=None, creator_id=None, c
 
 При чтении JSON парсится через `json.loads()`, при записи - сериализуется через `json.dumps()`.
 
+## Миграция на SaaS архитектуру
+
+База данных была мигрирована на мультитенантную SaaS архитектуру через миграцию `0003_migrate_to_saas.sql`.
+
+### Основные изменения:
+
+1. **Добавлены новые таблицы:**
+   - `account` - управление аккаунтами
+   - `account_member` - участники аккаунтов
+   - `bot` - централизованное управление ботами
+   - `course_deployment` - связь курсов с ботами
+   - `enrollment_token` - токены доступа к курсам
+
+2. **Добавлено поле `account_id` во все основные таблицы:**
+   - `conversation`, `run`, `waiting_element`, `course`, `course_element`, `courseparticipants`, `bannedparticipants`, `gen_settings`
+
+3. **Добавлены новые поля:**
+   - `bot_id` в `run` и `waiting_element` - ссылка на таблицу `bot`
+   - `deployment_id` в `run` - ссылка на `course_deployment`
+   - `token_id` в `run` - ссылка на `enrollment_token`
+   - Дополнительные поля в `course` (title, description, metadata, is_active)
+   - Дополнительные поля в `run` (is_active, ended_at, utm_medium)
+
+4. **Изменена уникальность курсов:**
+   - Было: `(course_id, bot_name)` - составной первичный ключ
+   - Стало: `(course_id, account_id)` - курс уникален в рамках аккаунта
+
+5. **Созданы внешние ключи:**
+   - Все таблицы связаны через `account_id` с таблицей `account`
+   - `run` связана с `bot`, `course_deployment`, `enrollment_token`
+   - `course_element` и `courseparticipants` связаны с `course` через `(course_id, account_id)`
+
+### Обратная совместимость:
+
+- Поле `bot_name` сохранено в таблицах `course`, `run`, `waiting_element` для обратной совместимости
+- Все существующие данные автоматически привязаны к аккаунту по умолчанию (`account_id = 1`)
+- Существующие боты автоматически созданы в таблице `bot` с временными токенами
+
+### Важные замечания:
+
+- **Токены ботов:** После миграции необходимо обновить токены ботов в таблице `bot`:
+  ```sql
+  UPDATE bot SET bot_token = '<actual_token>' WHERE bot_name = '<name>';
+  ```
+
+- **Деплойменты:** Курсы автоматически связаны с ботами через `course_deployment` на основе существующих данных
+
+- **Запросы:** Все запросы должны включать фильтрацию по `account_id` для изоляции данных между аккаунтами
+
 ## Рекомендации по улучшению
 
 1. **Пул подключений:** Использовать `psycopg2.pool.ThreadedConnectionPool` для переиспользования подключений
 2. **Контекстные менеджеры:** Использовать `with conn:` для автоматического управления транзакциями
 3. **Обработка ошибок:** Добавить единообразную обработку ошибок во все функции
-4. **Индексы:** Добавить индексы на часто используемые поля (`chat_id`, `run_id`, `element_id`)
-5. **Миграции:** Использовать систему миграций (например, Alembic) для управления схемой БД
+4. **Индексы:** Индексы добавлены в миграции на часто используемые поля (`account_id`, `bot_id`, `deployment_id`, `chat_id`, `run_id`)
+5. **Миграции:** Используется система миграций в `migrations/versions/` для управления схемой БД
 6. **Мониторинг:** Добавить логирование медленных запросов
 7. **Кэширование:** Рассмотреть кэширование часто запрашиваемых данных (курсы, элементы)
+8. **Изоляция данных:** Все запросы должны фильтроваться по `account_id` для обеспечения мультитенантности
 
 ## Примеры использования
 
-### Получение статистики по курсу
+### Получение статистики по курсу (с учетом account_id)
 
 ```python
-def get_course_statistics(course_id, run_id):
+def get_course_statistics(account_id, course_id, run_id):
     conn = get_connection()
     cursor = conn.cursor()
     
@@ -577,10 +842,10 @@ def get_course_statistics(course_id, run_id):
     query = """
     SELECT element_type, COUNT(*) 
     FROM conversation 
-    WHERE course_id = %s AND run_id = %s
+    WHERE account_id = %s AND course_id = %s AND run_id = %s
     GROUP BY element_type;
     """
-    cursor.execute(query, (course_id, run_id))
+    cursor.execute(query, (account_id, course_id, run_id))
     stats = cursor.fetchall()
     
     cursor.close()
@@ -588,10 +853,10 @@ def get_course_statistics(course_id, run_id):
     return stats
 ```
 
-### Получение прогресса пользователя
+### Получение прогресса пользователя (с учетом account_id)
 
 ```python
-def get_user_progress(chat_id, course_id):
+def get_user_progress(account_id, chat_id, course_id):
     conn = get_connection()
     cursor = conn.cursor()
     
@@ -599,9 +864,9 @@ def get_user_progress(chat_id, course_id):
     query = """
     SELECT SUM(score) AS total_score, SUM(maxscore) AS max_score
     FROM conversation
-    WHERE chat_id = %s AND course_id = %s AND score IS NOT NULL;
+    WHERE account_id = %s AND chat_id = %s AND course_id = %s AND score IS NOT NULL;
     """
-    cursor.execute(query, (chat_id, course_id))
+    cursor.execute(query, (account_id, chat_id, course_id))
     result = cursor.fetchone()
     
     cursor.close()
@@ -609,14 +874,175 @@ def get_user_progress(chat_id, course_id):
     return result
 ```
 
+### Получение ботов аккаунта
+
+```python
+def get_account_bots(account_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    query = """
+    SELECT bot_id, bot_name, display_name, is_active
+    FROM bot
+    WHERE account_id = %s AND is_active = TRUE
+    ORDER BY created_at DESC;
+    """
+    cursor.execute(query, (account_id,))
+    bots = cursor.fetchall()
+    
+    cursor.close()
+    conn.close()
+    return bots
+```
+
+### Получение деплойментов курса
+
+```python
+def get_course_deployments(account_id, course_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    query = """
+    SELECT cd.deployment_id, cd.bot_id, b.bot_name, b.display_name, cd.environment, cd.is_active
+    FROM course_deployment cd
+    JOIN bot b ON cd.bot_id = b.bot_id
+    WHERE cd.account_id = %s AND cd.course_id = %s
+    ORDER BY cd.created_at DESC;
+    """
+    cursor.execute(query, (account_id, course_id))
+    deployments = cursor.fetchall()
+    
+    cursor.close()
+    conn.close()
+    return deployments
+```
+
+### Создание нового деплоймента
+
+```python
+def create_course_deployment(account_id, course_id, bot_id, environment='prod'):
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    query = """
+    INSERT INTO course_deployment (course_id, account_id, bot_id, environment, is_active)
+    VALUES (%s, %s, %s, %s, TRUE)
+    ON CONFLICT (bot_id, course_id, account_id, environment) DO NOTHING
+    RETURNING deployment_id;
+    """
+    cursor.execute(query, (course_id, account_id, bot_id, environment))
+    result = cursor.fetchone()
+    
+    conn.commit()
+    cursor.close()
+    conn.close()
+    
+    return result[0] if result else None
+```
+
+### Получение активных токенов доступа
+
+```python
+def get_active_enrollment_tokens(account_id, deployment_id=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    query = """
+    SELECT et.token_id, et.token, et.token_type, et.max_uses, et.current_uses, 
+           et.expires_at, cd.course_id, b.bot_name
+    FROM enrollment_token et
+    JOIN course_deployment cd ON et.deployment_id = cd.deployment_id
+    JOIN bot b ON cd.bot_id = b.bot_id
+    WHERE cd.account_id = %s 
+      AND et.is_active = TRUE
+      AND (et.expires_at IS NULL OR et.expires_at > NOW())
+      AND (et.max_uses IS NULL OR et.current_uses < et.max_uses)
+      AND (%s IS NULL OR et.deployment_id = %s)
+    ORDER BY et.created_at DESC;
+    """
+    cursor.execute(query, (account_id, deployment_id, deployment_id))
+    tokens = cursor.fetchall()
+    
+    cursor.close()
+    conn.close()
+    return tokens
+```
+
+## Важные замечания по использованию SaaS архитектуры
+
+### Изоляция данных
+
+**Всегда фильтруйте запросы по `account_id`:**
+
+```python
+# ✅ Правильно
+query = "SELECT * FROM course WHERE account_id = %s AND course_id = %s"
+
+# ❌ Неправильно (может вернуть данные других аккаунтов)
+query = "SELECT * FROM course WHERE course_id = %s"
+```
+
+### Работа с ботами
+
+**Используйте `bot_id` вместо `bot_name`:**
+
+```python
+# ✅ Правильно (новый подход)
+query = """
+SELECT r.* FROM run r
+WHERE r.account_id = %s AND r.bot_id = %s
+"""
+
+# ⚠️ Устаревший подход (работает, но не рекомендуется)
+query = """
+SELECT r.* FROM run r
+WHERE r.account_id = %s AND r.botname = %s
+"""
+```
+
+### Работа с курсами
+
+**Курсы уникальны в рамках аккаунта:**
+
+```python
+# ✅ Правильно
+query = """
+SELECT * FROM course 
+WHERE account_id = %s AND course_id = %s
+"""
+
+# ❌ Неправильно (старый подход с bot_name)
+query = """
+SELECT * FROM course 
+WHERE course_id = %s AND bot_name = %s
+"""
+```
+
+### Деплойменты
+
+**Используйте `deployment_id` для связи курсов с ботами:**
+
+```python
+# Получение деплоймента для курса и бота
+query = """
+SELECT deployment_id FROM course_deployment
+WHERE account_id = %s AND course_id = %s AND bot_id = %s AND environment = 'prod'
+"""
+```
+
 ## Заключение
 
 База данных играет центральную роль в приложении, обеспечивая:
+- **Мультитенантность** - изоляция данных между аккаунтами
 - Хранение истории взаимодействий
 - Управление курсами и элементами
 - Контроль доступа и блокировок
 - Планирование отложенных действий
 - Аналитику и отчетность
+- Централизованное управление ботами
+- Гибкое развертывание курсов на разных ботах
 
-Текущая реализация проста и функциональна, но может быть улучшена для повышения производительности и надежности в условиях высокой нагрузки.
+Текущая реализация поддерживает мультитенантную SaaS архитектуру и может быть улучшена для повышения производительности и надежности в условиях высокой нагрузки.
+
+**Миграция на SaaS архитектуру завершена.** Все существующие данные сохранены и автоматически привязаны к аккаунту по умолчанию. Для использования новых возможностей необходимо обновить код приложения для работы с новыми таблицами и полями.
 
