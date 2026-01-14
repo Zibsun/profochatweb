@@ -48,3 +48,5 @@ ai_bee1_v12:
   path: scripts/ai_bee1_v12.yml
 test_course_editor:
   path: scripts/test_course_editor.yml
+greek2:
+  path: scripts/greek_test2.yml

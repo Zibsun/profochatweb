@@ -129,9 +129,7 @@ export interface Bot {
   updated_at: string;
   is_active: boolean;
   settings?: Record<string, any>;
-}
-
-export interface Deployment {
+}export interface Deployment {
   deployment_id: number;
   course_id: string;
   account_id: number;
