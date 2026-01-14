@@ -1,5 +1,5 @@
-import { CourseListEditor } from '@/components/course-editor/CourseListEditor';
+import { CoursesList } from '@/components/courses/CoursesList';
 
 export default function CoursesPage() {
-  return <CourseListEditor />;
+  return <CoursesList />;
 }
