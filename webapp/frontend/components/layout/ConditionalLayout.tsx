@@ -1,20 +1,21 @@
 "use client"
 
 import { usePathname } from 'next/navigation'
-import { Header } from './Header'
-import { Footer } from './Footer'
+import { AppLayout } from './AppLayout'
 
 export function ConditionalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const isCourseEditor = pathname?.startsWith('/course-editor')
-  const isBotsPage = pathname?.startsWith('/bots')
-  const shouldShowLayout = !isCourseEditor && !isBotsPage
+  
+  // Auth pages don't need sidebar
+  const isAuthPage = pathname?.startsWith('/login') || pathname?.startsWith('/register')
+  
+  // Root page might not need sidebar either
+  const isRootPage = pathname === '/'
 
-  return (
-    <>
-      {shouldShowLayout && <Header />}
-      <main className="flex-1">{children}</main>
-      {shouldShowLayout && <Footer />}
-    </>
-  )
+  if (isAuthPage || isRootPage) {
+    return <>{children}</>
+  }
+
+  // All other pages use AppLayout with sidebar
+  return <AppLayout>{children}</AppLayout>
 }

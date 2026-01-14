@@ -271,7 +271,7 @@ export function DeploymentDetailView({ deploymentId }: DeploymentDetailViewProps
   const inviteLink = token ? `https://t.me/${deployment.bot?.bot_name || 'bot'}?start=${token.token}` : null;
 
   return (
-    <div className="min-h-screen bg-background p-6 editor-root">
+    <div className="h-full bg-background p-6 editor-root">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">

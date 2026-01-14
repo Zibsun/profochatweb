@@ -178,7 +178,7 @@ export function DeploymentsList({ deploymentId }: DeploymentsListProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6 editor-root">
+    <div className="h-full bg-background p-6 editor-root">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">

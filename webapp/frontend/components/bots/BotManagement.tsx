@@ -471,7 +471,7 @@ export function BotManagement({ initialBotId }: BotManagementProps = {}) {
   }
 
   return (
-    <div className="flex-1 flex overflow-hidden h-screen">
+    <div className="flex-1 flex overflow-hidden h-full">
       {/* Left Panel - Bots List */}
       <BotsList
         bots={bots}
