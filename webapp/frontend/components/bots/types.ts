@@ -18,18 +18,10 @@ export interface BotInternalSettings {
   active: boolean;
 }
 
-export interface ConnectedCourse {
-  id: string;
-  title: string;
-  environment?: string;
-  is_active?: boolean;
-}
-
 export interface BotDetails {
   id: string;
   bot_name: string;
   display_name?: string;
   telegram_info?: TelegramInfo;
   internal_settings?: BotInternalSettings;
-  connected_courses?: ConnectedCourse[];
 }

@@ -2,7 +2,6 @@
 
 import { TelegramInfoSection } from "./TelegramInfoSection";
 import { ApiStatusSection } from "./ApiStatusSection";
-import { ConnectedCoursesSection } from "./ConnectedCoursesSection";
 import { BotDetails } from "./types";
 
 interface BotInspectorProps {
@@ -17,8 +16,6 @@ interface BotInspectorProps {
       webhook?: string | null;
     };
   }>;
-  onAddCourse: () => void;
-  onCourseRemoved?: () => void;
 }
 
 export function BotInspector({
@@ -26,8 +23,6 @@ export function BotInspector({
   loading = false,
   onToggleActive,
   onTestConnection,
-  onAddCourse,
-  onCourseRemoved,
 }: BotInspectorProps) {
   if (loading) {
     return (
@@ -66,15 +61,6 @@ export function BotInspector({
             onTestConnection={onTestConnection}
           />
         )}
-
-        {/* Connected Courses Section */}
-        <ConnectedCoursesSection
-          courses={botDetails.connected_courses || []}
-          botId={botDetails.id}
-          onAddCourse={onAddCourse}
-          onCourseRemoved={onCourseRemoved}
-          onCourseUpdated={onCourseRemoved}
-        />
       </div>
     </div>
   );

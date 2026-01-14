@@ -150,10 +150,14 @@ echo "Migrations:"
 echo ""
 
 for migration in $ALL_MIGRATIONS; do
-    if echo "$APPLIED" | grep -q "^${migration}$"; then
-        # Get applied date if available
+    # Extract version number from migration filename (e.g., "0001_create_schema_migrations" -> "0001")
+    migration_version=$(echo "$migration" | cut -d'_' -f1)
+    
+    # Check if version exists in applied migrations (compare version numbers, not full filenames)
+    if echo "$APPLIED" | grep -q "^${migration_version}$"; then
+        # Get applied date if available (use version number, not full filename)
         APPLIED_DATE=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c \
-            "SELECT TO_CHAR(applied_at, 'YYYY-MM-DD HH24:MI') FROM schema_migrations WHERE version = '$migration';" 2>/dev/null | tr -d ' ' || echo "")
+            "SELECT TO_CHAR(applied_at, 'YYYY-MM-DD HH24:MI') FROM schema_migrations WHERE version = '$migration_version';" 2>/dev/null | tr -d ' ' || echo "")
         
         if [ -n "$APPLIED_DATE" ]; then
             echo -e "  ${GREEN}✓${NC} $migration ${GREEN}(applied: $APPLIED_DATE)${NC}"

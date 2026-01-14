@@ -76,6 +76,15 @@ CREATE SEQUENCE public.course_element_id_seq
 	START 1
 	CACHE 1
 	NO CYCLE;
+-- DROP SEQUENCE public.course_group_group_id_seq;
+
+CREATE SEQUENCE public.course_group_group_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
 -- DROP SEQUENCE public.courseparticipant_id_seq;
 
 CREATE SEQUENCE public.courseparticipant_id_seq
@@ -94,9 +103,27 @@ CREATE SEQUENCE public.enrollment_token_token_id_seq
 	START 1
 	CACHE 1
 	NO CYCLE;
+-- DROP SEQUENCE public.invite_link_invite_link_id_seq;
+
+CREATE SEQUENCE public.invite_link_invite_link_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
 -- DROP SEQUENCE public.run_run_id_seq1;
 
 CREATE SEQUENCE public.run_run_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE public.schedule_schedule_id_seq;
+
+CREATE SEQUENCE public.schedule_schedule_id_seq
 	INCREMENT BY 1
 	MINVALUE 1
 	MAXVALUE 9223372036854775807
@@ -201,6 +228,40 @@ CREATE INDEX idx_bot_active ON public.bot USING btree (account_id, is_active);
 CREATE INDEX idx_bot_name ON public.bot USING btree (bot_name);
 
 
+-- public.conversation definition
+
+-- Drop table
+
+-- DROP TABLE public.conversation;
+
+CREATE TABLE public.conversation (
+	conversation_id serial4 NOT NULL,
+	chat_id int8 NULL,
+	username text NULL,
+	course_code text NULL,
+	element_id text NULL,
+	element_type text NULL,
+	"role" text NULL,
+	"json" text NULL,
+	report text NULL,
+	score float4 NULL,
+	maxscore float4 NULL,
+	date_inserted timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	run_id int4 NULL,
+	account_id int4 DEFAULT 1 NOT NULL,
+	course_id int4 NULL,
+	CONSTRAINT conversation_pkey PRIMARY KEY (conversation_id),
+	CONSTRAINT conversation_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.account(account_id) ON DELETE CASCADE
+);
+CREATE INDEX idx_conversation_account ON public.conversation USING btree (account_id);
+CREATE INDEX idx_conversation_chat ON public.conversation USING btree (chat_id);
+CREATE INDEX idx_conversation_course ON public.conversation USING btree (course_id, account_id);
+CREATE INDEX idx_conversation_date ON public.conversation USING btree (date_inserted DESC);
+CREATE INDEX idx_conversation_element ON public.conversation USING btree (course_id, account_id, element_id);
+CREATE INDEX idx_conversation_role ON public.conversation USING btree (run_id, role);
+CREATE INDEX idx_conversation_run ON public.conversation USING btree (run_id);
+
+
 -- public.course definition
 
 -- Drop table
@@ -230,33 +291,6 @@ CREATE INDEX idx_course_coursecode_botname ON public.course USING btree (course_
 CREATE INDEX idx_course_created ON public.course USING btree (account_id, date_created DESC);
 
 
--- public.course_deployment definition
-
--- Drop table
-
--- DROP TABLE public.course_deployment;
-
-CREATE TABLE public.course_deployment (
-	deployment_id serial4 NOT NULL,
-	course_code text NOT NULL,
-	account_id int4 NOT NULL,
-	bot_id int4 NOT NULL,
-	environment text DEFAULT 'prod'::text NULL,
-	is_active bool DEFAULT true NULL,
-	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL,
-	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL,
-	settings jsonb NULL,
-	course_id int4 NOT NULL,
-	CONSTRAINT course_deployment_bot_id_course_id_account_id_environment_key UNIQUE (bot_id, course_id, account_id, environment),
-	CONSTRAINT course_deployment_pkey PRIMARY KEY (deployment_id),
-	CONSTRAINT course_deployment_bot_fkey FOREIGN KEY (bot_id) REFERENCES public.bot(bot_id) ON DELETE CASCADE,
-	CONSTRAINT course_deployment_course_fkey FOREIGN KEY (course_id) REFERENCES public.course(course_id) ON DELETE CASCADE
-);
-CREATE INDEX idx_deployment_active ON public.course_deployment USING btree (bot_id, is_active);
-CREATE INDEX idx_deployment_bot ON public.course_deployment USING btree (bot_id);
-CREATE INDEX idx_deployment_course ON public.course_deployment USING btree (course_id, account_id);
-
-
 -- public.course_element definition
 
 -- Drop table
@@ -278,6 +312,35 @@ CREATE TABLE public.course_element (
 CREATE INDEX idx_course_element_course ON public.course_element USING btree (course_id, account_id);
 CREATE INDEX idx_course_element_order ON public.course_element USING btree (course_id, account_id, course_element_id);
 CREATE INDEX idx_course_element_type ON public.course_element USING btree (course_id, account_id, element_type);
+
+
+-- public.course_group definition
+
+-- Drop table
+
+-- DROP TABLE public.course_group;
+
+CREATE TABLE public.course_group (
+	course_group_id int4 DEFAULT nextval('course_group_group_id_seq'::regclass) NOT NULL,
+	account_id int4 NOT NULL,
+	bot_id int4 NOT NULL,
+	course_id int4 NOT NULL,
+	"name" text NOT NULL,
+	description text NULL,
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	is_active bool DEFAULT true NULL,
+	settings jsonb NULL,
+	CONSTRAINT course_group_bot_id_course_id_name_key UNIQUE (bot_id, course_id, name),
+	CONSTRAINT course_group_pkey PRIMARY KEY (course_group_id),
+	CONSTRAINT course_group_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.account(account_id) ON DELETE CASCADE,
+	CONSTRAINT course_group_bot_id_fkey FOREIGN KEY (bot_id) REFERENCES public.bot(bot_id) ON DELETE CASCADE,
+	CONSTRAINT course_group_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.course(course_id) ON DELETE CASCADE
+);
+CREATE INDEX idx_course_group_account ON public.course_group USING btree (account_id);
+CREATE INDEX idx_course_group_active ON public.course_group USING btree (bot_id, is_active);
+CREATE INDEX idx_course_group_bot ON public.course_group USING btree (bot_id);
+CREATE INDEX idx_course_group_course ON public.course_group USING btree (course_id);
 
 
 -- public.courseparticipants definition
@@ -307,34 +370,6 @@ CREATE INDEX idx_courseparticipants_coursecode ON public.courseparticipants USIN
 CREATE INDEX idx_courseparticipants_username ON public.courseparticipants USING btree (username);
 
 
--- public.enrollment_token definition
-
--- Drop table
-
--- DROP TABLE public.enrollment_token;
-
-CREATE TABLE public.enrollment_token (
-	token_id serial4 NOT NULL,
-	deployment_id int4 NOT NULL,
-	"token" text NOT NULL,
-	token_type text DEFAULT 'public'::text NULL,
-	max_uses int4 NULL,
-	current_uses int4 DEFAULT 0 NULL,
-	expires_at timestamp NULL,
-	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL,
-	created_by int8 NULL,
-	is_active bool DEFAULT true NULL,
-	metadata jsonb NULL,
-	CONSTRAINT enrollment_token_pkey PRIMARY KEY (token_id),
-	CONSTRAINT enrollment_token_token_key UNIQUE (token),
-	CONSTRAINT enrollment_token_deployment_fkey FOREIGN KEY (deployment_id) REFERENCES public.course_deployment(deployment_id) ON DELETE CASCADE
-);
-CREATE INDEX idx_token_active ON public.enrollment_token USING btree (deployment_id, is_active);
-CREATE INDEX idx_token_deployment ON public.enrollment_token USING btree (deployment_id);
-CREATE INDEX idx_token_expires ON public.enrollment_token USING btree (expires_at) WHERE (expires_at IS NOT NULL);
-CREATE INDEX idx_token_token ON public.enrollment_token USING btree (token);
-
-
 -- public.gen_settings definition
 
 -- Drop table
@@ -359,47 +394,53 @@ CREATE INDEX idx_gen_settings_bot ON public.gen_settings USING btree (bot_id);
 CREATE INDEX idx_gen_settings_key ON public.gen_settings USING btree (account_id, bot_id, s_key);
 
 
--- public.run definition
+-- public.invite_link definition
 
 -- Drop table
 
--- DROP TABLE public.run;
+-- DROP TABLE public.invite_link;
 
-CREATE TABLE public.run (
-	run_id serial4 NOT NULL,
-	chat_id int8 NULL,
-	username text NULL,
-	botname text NULL,
-	course_code text NULL,
-	date_inserted timestamp DEFAULT CURRENT_TIMESTAMP NULL,
-	utm_source text NULL,
-	utm_campaign text NULL,
-	is_ended bool NULL,
-	account_id int4 DEFAULT 1 NOT NULL,
-	bot_id int4 NULL,
-	deployment_id int4 NULL,
-	token_id int4 NULL,
+CREATE TABLE public.invite_link (
+	invite_link_id serial4 NOT NULL,
+	course_group_id int4 NOT NULL,
+	"token" text NOT NULL,
+	max_uses int4 NULL,
+	current_uses int4 DEFAULT 0 NULL,
+	expires_at timestamp NULL,
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	created_by int8 NULL,
 	is_active bool DEFAULT true NULL,
-	ended_at timestamp NULL,
-	utm_medium text NULL,
-	utm_term text NULL,
-	utm_content text NULL,
 	metadata jsonb NULL,
-	course_id int4 NULL,
-	CONSTRAINT run_pkey PRIMARY KEY (run_id),
-	CONSTRAINT run_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.account(account_id) ON DELETE CASCADE,
-	CONSTRAINT run_bot_id_fkey FOREIGN KEY (bot_id) REFERENCES public.bot(bot_id) ON DELETE CASCADE,
-	CONSTRAINT run_deployment_id_fkey FOREIGN KEY (deployment_id) REFERENCES public.course_deployment(deployment_id) ON DELETE RESTRICT,
-	CONSTRAINT run_token_id_fkey FOREIGN KEY (token_id) REFERENCES public.enrollment_token(token_id)
+	CONSTRAINT invite_link_pkey PRIMARY KEY (invite_link_id),
+	CONSTRAINT invite_link_token_key UNIQUE (token),
+	CONSTRAINT invite_link_course_group_id_fkey FOREIGN KEY (course_group_id) REFERENCES public.course_group(course_group_id) ON DELETE CASCADE
 );
-CREATE INDEX idx_run_account ON public.run USING btree (account_id);
-CREATE INDEX idx_run_active ON public.run USING btree (bot_id, is_active);
-CREATE INDEX idx_run_bot ON public.run USING btree (bot_id);
-CREATE INDEX idx_run_chat ON public.run USING btree (bot_id, chat_id);
-CREATE INDEX idx_run_course ON public.run USING btree (course_id, account_id);
-CREATE INDEX idx_run_deployment ON public.run USING btree (deployment_id);
-CREATE INDEX idx_run_ended ON public.run USING btree (is_ended, ended_at);
-CREATE UNIQUE INDEX run_one_active_per_bot_chat ON public.run USING btree (bot_id, chat_id) WHERE (is_active = true);
+CREATE INDEX idx_invite_link_active ON public.invite_link USING btree (course_group_id, is_active);
+CREATE INDEX idx_invite_link_course_group ON public.invite_link USING btree (course_group_id);
+CREATE INDEX idx_invite_link_expires ON public.invite_link USING btree (expires_at) WHERE (expires_at IS NOT NULL);
+CREATE INDEX idx_invite_link_token ON public.invite_link USING btree (token);
+
+
+-- public.schedule definition
+
+-- Drop table
+
+-- DROP TABLE public.schedule;
+
+CREATE TABLE public.schedule (
+	schedule_id serial4 NOT NULL,
+	course_group_id int4 NOT NULL,
+	schedule_type text NOT NULL,
+	schedule_config jsonb NOT NULL,
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	is_active bool DEFAULT true NULL,
+	CONSTRAINT schedule_course_group_id_key UNIQUE (course_group_id),
+	CONSTRAINT schedule_pkey PRIMARY KEY (schedule_id),
+	CONSTRAINT schedule_course_group_id_fkey FOREIGN KEY (course_group_id) REFERENCES public.course_group(course_group_id) ON DELETE CASCADE
+);
+CREATE INDEX idx_schedule_active ON public.schedule USING btree (course_group_id, is_active);
+CREATE INDEX idx_schedule_course_group ON public.schedule USING btree (course_group_id);
 
 
 -- public.waiting_element definition
@@ -423,8 +464,7 @@ CREATE TABLE public.waiting_element (
 	course_id int4 NULL,
 	CONSTRAINT waiting_element_pkey PRIMARY KEY (waiting_element_id),
 	CONSTRAINT waiting_element_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.account(account_id) ON DELETE CASCADE,
-	CONSTRAINT waiting_element_bot_id_fkey FOREIGN KEY (bot_id) REFERENCES public.bot(bot_id) ON DELETE CASCADE,
-	CONSTRAINT waiting_element_run_id_fkey FOREIGN KEY (run_id) REFERENCES public.run(run_id) ON DELETE CASCADE
+	CONSTRAINT waiting_element_bot_id_fkey FOREIGN KEY (bot_id) REFERENCES public.bot(bot_id) ON DELETE CASCADE
 );
 CREATE INDEX idx_waiting_account ON public.waiting_element USING btree (account_id);
 CREATE INDEX idx_waiting_active ON public.waiting_element USING btree (is_waiting, waiting_till_date) WHERE (is_waiting = true);
@@ -459,38 +499,3 @@ CREATE INDEX idx_banned_active ON public.bannedparticipants USING btree (bot_id,
 CREATE INDEX idx_banned_bot ON public.bannedparticipants USING btree (bot_id);
 CREATE INDEX idx_banned_chat ON public.bannedparticipants USING btree (bot_id, chat_id, excluded);
 CREATE INDEX idx_bannedparticipants_3 ON public.bannedparticipants USING btree (botname, chat_id, excluded);
-
-
--- public.conversation definition
-
--- Drop table
-
--- DROP TABLE public.conversation;
-
-CREATE TABLE public.conversation (
-	conversation_id serial4 NOT NULL,
-	chat_id int8 NULL,
-	username text NULL,
-	course_code text NULL,
-	element_id text NULL,
-	element_type text NULL,
-	"role" text NULL,
-	"json" text NULL,
-	report text NULL,
-	score float4 NULL,
-	maxscore float4 NULL,
-	date_inserted timestamp DEFAULT CURRENT_TIMESTAMP NULL,
-	run_id int4 NULL,
-	account_id int4 DEFAULT 1 NOT NULL,
-	course_id int4 NULL,
-	CONSTRAINT conversation_pkey PRIMARY KEY (conversation_id),
-	CONSTRAINT conversation_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.account(account_id) ON DELETE CASCADE,
-	CONSTRAINT conversation_run_id_fkey FOREIGN KEY (run_id) REFERENCES public.run(run_id) ON DELETE CASCADE
-);
-CREATE INDEX idx_conversation_account ON public.conversation USING btree (account_id);
-CREATE INDEX idx_conversation_chat ON public.conversation USING btree (chat_id);
-CREATE INDEX idx_conversation_course ON public.conversation USING btree (course_id, account_id);
-CREATE INDEX idx_conversation_date ON public.conversation USING btree (date_inserted DESC);
-CREATE INDEX idx_conversation_element ON public.conversation USING btree (course_id, account_id, element_id);
-CREATE INDEX idx_conversation_role ON public.conversation USING btree (run_id, role);
-CREATE INDEX idx_conversation_run ON public.conversation USING btree (run_id);

@@ -34,10 +34,8 @@ const navItems: NavItem[] = [
   },
   {
     label: 'Groups',
-    href: '#',
+    href: '/groups',
     icon: Users,
-    disabled: true,
-    future: true,
   },
   {
     label: 'Invites',
@@ -73,6 +71,9 @@ export function AppSidebar({ isCollapsed, onToggle }: AppSidebarProps) {
     }
     if (href === '/courses') {
       return pathname?.startsWith('/courses') || pathname?.startsWith('/course-editor') || false;
+    }
+    if (href === '/groups') {
+      return pathname?.startsWith('/groups') || false;
     }
     return pathname?.startsWith(href) || false;
   };

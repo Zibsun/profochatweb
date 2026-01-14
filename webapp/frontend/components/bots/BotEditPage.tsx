@@ -12,7 +12,6 @@ import {
   X,
 } from 'lucide-react';
 import { BotInspector } from './BotInspector';
-import { AttachCourseModal } from './AttachCourseModal';
 import { BotDetails } from './types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -25,7 +24,6 @@ export function BotEditPage({ botId }: BotEditPageProps) {
   const router = useRouter();
   const [botDetails, setBotDetails] = useState<BotDetails | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAttachCourseModalOpen, setIsAttachCourseModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -58,21 +56,6 @@ export function BotEditPage({ botId }: BotEditPageProps) {
         // Check if request was cancelled
         if (cancelled) return;
 
-        // Fetch connected courses
-        let connectedCourses: Array<{ id: string; title: string }> = [];
-        try {
-          const coursesResponse = await fetch(`/api/bots/${botId}/courses`);
-          if (coursesResponse.ok) {
-            const coursesData = await coursesResponse.json();
-            connectedCourses = coursesData.courses || [];
-          }
-        } catch (error) {
-          console.warn('Failed to load connected courses:', error);
-        }
-
-        // Check again after loading courses
-        if (cancelled) return;
-
         // Form Telegram info from bot data
         const botDisplayName = botData.display_name || botData.bot_name;
         const botUsername = botData.bot_name.startsWith('@')
@@ -97,7 +80,6 @@ export function BotEditPage({ botId }: BotEditPageProps) {
             token_masked: botData.bot_token || '••••••••••••••••••',
             active: botData.is_active,
           },
-          connected_courses: connectedCourses,
         };
 
         console.log('Setting bot details:', newBotDetails);
@@ -198,101 +180,6 @@ export function BotEditPage({ botId }: BotEditPageProps) {
     }
   };
 
-  const handleAddCourse = () => {
-    setIsAttachCourseModalOpen(true);
-  };
-
-  const handleAttachCourses = async (courseIds: string[]) => {
-    try {
-      // Attach courses to bot
-      for (const courseId of courseIds) {
-        const response = await fetch(`/api/bots/${botId}/courses/${courseId}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            environment: 'prod',
-            is_active: true,
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || `Failed to attach course ${courseId}`);
-        }
-      }
-
-      toast({
-        title: 'Courses attached',
-        description: `${courseIds.length} course(s) have been attached to the bot`,
-      });
-
-      setIsAttachCourseModalOpen(false);
-
-      // Reload bot details
-      const botResponse = await fetch(`/api/bots/${botId}`);
-      if (botResponse.ok) {
-        const botData = await botResponse.json();
-        const coursesResponse = await fetch(`/api/bots/${botId}/courses`);
-        let connectedCourses: Array<{ id: string; title: string }> = [];
-        if (coursesResponse.ok) {
-          const coursesData = await coursesResponse.json();
-          connectedCourses = coursesData.courses || [];
-        }
-
-        const botDisplayName = botData.display_name || botData.bot_name;
-        const botUsername = botData.bot_name.startsWith('@')
-          ? botData.bot_name
-          : `@${botData.bot_name}`;
-
-        setBotDetails({
-          id: botId,
-          bot_name: botData.bot_name,
-          display_name: botDisplayName,
-          telegram_info: {
-            avatar: undefined,
-            bot_username: botUsername,
-            display_name: botDisplayName,
-            about: botData.description || undefined,
-            short_about: undefined,
-            commands: [],
-          },
-          internal_settings: {
-            token_masked: botData.bot_token || '••••••••••••••••••',
-            active: botData.is_active,
-          },
-          connected_courses: connectedCourses,
-        });
-      }
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to attach courses',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const reloadConnectedCourses = async () => {
-    try {
-      const coursesResponse = await fetch(`/api/bots/${botId}/courses`);
-      if (coursesResponse.ok) {
-        const coursesData = await coursesResponse.json();
-        const connectedCourses = coursesData.courses || [];
-
-        if (botDetails) {
-          setBotDetails({
-            ...botDetails,
-            connected_courses: connectedCourses,
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Failed to reload connected courses:', error);
-    }
-  };
-
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
@@ -387,8 +274,6 @@ export function BotEditPage({ botId }: BotEditPageProps) {
           loading={false}
           onToggleActive={handleToggleActive}
           onTestConnection={handleTestConnection}
-          onAddCourse={handleAddCourse}
-          onCourseRemoved={reloadConnectedCourses}
         />
       </div>
 
@@ -406,25 +291,6 @@ export function BotEditPage({ botId }: BotEditPageProps) {
           </div>
         </div>
       </div>
-
-      {/* Attach Course Modal */}
-      {isAttachCourseModalOpen && (
-        <AttachCourseModal
-          isOpen={isAttachCourseModalOpen}
-          botId={botId}
-          connectedCourseIds={(botDetails?.connected_courses || []).map((c) => c.id)}
-          onClose={() => setIsAttachCourseModalOpen(false)}
-          onAttach={handleAttachCourses}
-          onCreateCourse={() => {
-            setIsAttachCourseModalOpen(false);
-            router.push('/course-editor');
-            toast({
-              title: 'Create Course',
-              description: 'Redirecting to course creation page',
-            });
-          }}
-        />
-      )}
 
       {/* Delete Confirmation Modal */}
       {isDeleteModalOpen && (
@@ -444,7 +310,7 @@ export function BotEditPage({ botId }: BotEditPageProps) {
                   Are you sure you want to delete this bot? This action cannot be undone.
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  This will permanently delete the bot and all associated course deployments.
+                  This will permanently delete the bot.
                 </p>
               </div>
               {!isDeleting && (

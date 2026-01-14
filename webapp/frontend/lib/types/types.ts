@@ -117,7 +117,7 @@ export interface QuizAttempt {
   created_at: string;
 }
 
-// Deployment-related types
+// Bot-related types
 export interface Bot {
   bot_id: number;
   account_id: number;
@@ -129,18 +129,112 @@ export interface Bot {
   updated_at: string;
   is_active: boolean;
   settings?: Record<string, any>;
-}export interface Deployment {
-  deployment_id: number;
-  course_id: string;
+}
+
+// Group-related types (replaces Deployment)
+export interface Group {
+  group_id: number;
   account_id: number;
   bot_id: number;
-  name?: string; // Custom name for deployment (e.g., "prod", "demo")
-  environment?: string; // 'prod', 'staging', 'dev', etc.
+  course_id: number; // INT after migration 0004
+  name: string;
+  description?: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
   settings?: Record<string, any>;
   // Joined fields (from API)
+  course?: {
+    course_id: number;
+    course_code: string;
+    title: string;
+  };
+  bot?: {
+    bot_id: number;
+    bot_name: string;
+    display_name?: string;
+  };
+  schedule?: Schedule;
+  // Statistics
+  stats?: {
+    active_runs: number;
+    completed_runs: number;
+    total_students: number;
+    active_invite_links: number;
+  };
+}
+
+export interface InviteLink {
+  invite_link_id: number;
+  group_id: number;
+  token: string;
+  max_uses?: number;
+  current_uses: number;
+  expires_at?: string;
+  created_at: string;
+  created_by?: number;
+  is_active: boolean;
+  metadata?: Record<string, any>;
+  // Joined fields
+  group?: Group;
+  // Computed fields
+  invite_url?: string; // Full invite link URL
+}
+
+export interface Schedule {
+  schedule_id: number;
+  group_id: number;
+  schedule_type: 'weekly' | 'daily' | 'custom';
+  schedule_config: {
+    // For weekly
+    day_of_week?: number; // 0-6 (0 = Sunday)
+    time?: string; // HH:MM
+    timezone?: string;
+    // For daily
+    // time?: string;
+    // timezone?: string;
+    // For custom
+    dates?: string[]; // ISO date strings
+  };
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Run {
+  run_id: number;
+  group_id: number; // Changed from deployment_id
+  account_id: number;
+  bot_id: number;
+  chat_id: number;
+  username?: string;
+  course_id: number; // INT after migration 0004
+  invite_link_id?: number; // Changed from token_id
+  date_inserted: string;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_term?: string;
+  utm_content?: string;
+  is_ended?: boolean;
+  is_active: boolean;
+  ended_at?: string;
+  metadata?: Record<string, any>;
+}
+
+// Legacy types (deprecated, kept for backward compatibility during migration)
+/** @deprecated Use Group instead */
+export interface Deployment {
+  deployment_id: number;
+  course_id: string;
+  account_id: number;
+  bot_id: number;
+  name?: string;
+  environment?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  settings?: Record<string, any>;
   course?: {
     course_id: string;
     title: string;
@@ -150,13 +244,13 @@ export interface Bot {
     bot_name: string;
     display_name?: string;
   };
-  // Statistics
   stats?: {
     active_runs: number;
     completed_runs: number;
   };
 }
 
+/** @deprecated Use InviteLink instead */
 export interface EnrollmentToken {
   token_id: number;
   deployment_id: number;
@@ -168,24 +262,5 @@ export interface EnrollmentToken {
   created_at: string;
   created_by?: number;
   is_active: boolean;
-  metadata?: Record<string, any>;
-}
-
-export interface Run {
-  run_id: number;
-  deployment_id: number;
-  account_id: number;
-  bot_id: number;
-  chat_id: number;
-  username?: string;
-  course_id: string;
-  token_id?: number;
-  date_inserted: string;
-  utm_source?: string;
-  utm_medium?: string;
-  utm_campaign?: string;
-  is_ended?: boolean;
-  is_active: boolean;
-  ended_at?: string;
   metadata?: Record<string, any>;
 }

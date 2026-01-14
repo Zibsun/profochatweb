@@ -38,15 +38,6 @@ DATABASE_URL=postgresql://username:password@localhost:5432/database_name
 - `created_at`, `updated_at` - временные метки
 - `settings` - JSONB с дополнительными настройками
 
-### Таблица `course_deployment`
-Используется для получения списка курсов, связанных с ботом:
-- `deployment_id` (PK)
-- `bot_id` (FK → bot)
-- `course_id` - идентификатор курса
-- `account_id` (FK → account)
-- `environment` - окружение (prod, staging, dev)
-- `is_active` - флаг активности
-
 ## API Endpoints
 
 ### GET /api/bots
@@ -113,23 +104,6 @@ DATABASE_URL=postgresql://username:password@localhost:5432/database_name
 
 **Ответ:** Обновленный объект бота.
 
-### GET /api/bots/[botId]/courses
-Возвращает список курсов, связанных с ботом через `course_deployment`.
-
-**Ответ:**
-```json
-{
-  "courses": [
-    {
-      "id": "course_id",
-      "title": "Course Title",
-      "environment": "prod",
-      "is_active": true
-    }
-  ]
-}
-```
-
 ## Безопасность
 
 1. **Маскирование токенов:** Все токены автоматически маскируются при возврате из API (кроме случаев, когда нужен реальный токен для операций).
@@ -162,7 +136,7 @@ Endpoint `/api/telegram/getMe` теперь вызывает реальный Te
 
 2. **Шифрование токенов:** В продакшене токены ботов должны храниться в зашифрованном виде.
 
-3. **Кэширование:** Добавить кэширование для часто запрашиваемых данных (список ботов, курсы).
+3. **Кэширование:** Добавить кэширование для часто запрашиваемых данных (список ботов).
 
 4. **Telegram Info:** Создать endpoint для получения актуальной информации о боте из Telegram API (аватар, команды, описание).
 
@@ -176,11 +150,10 @@ Endpoint `/api/telegram/getMe` теперь вызывает реальный Te
 
 1. PostgreSQL запущен и доступен
 2. `DATABASE_URL` правильно настроен
-3. Таблицы `bot` и `course_deployment` существуют и заполнены тестовыми данными
+3. Таблица `bot` существует и заполнена тестовыми данными
 4. Можно подключиться к БД из Node.js окружения
 
 ## Миграции
 
 Убедитесь, что выполнены миграции для создания таблиц:
 - `migrations/versions/0003_migrate_to_saas.sql` - создает таблицу `bot`
-- Таблица `course_deployment` должна существовать для работы с курсами

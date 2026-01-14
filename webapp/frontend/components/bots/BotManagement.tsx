@@ -5,36 +5,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { BotsList } from "./BotsList";
 import { BotInspector } from "./BotInspector";
 import { AddBotModal } from "./AddBotModal";
-import { AttachCourseModal } from "./AttachCourseModal";
 import { Bot } from "@/lib/types/types";
 import { BotDetails } from "./types";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Loader2, X, AlertCircle } from "lucide-react";
-
-// Mock data for development
-const mockTelegramInfo = {
-  avatar: undefined, // Will be loaded from Telegram API if available
-  bot_username: "@main_bot",
-  display_name: "Main Bot",
-  about: "Training bot for onboarding",
-  short_about: "Learn basics fast",
-  commands: [
-    { command: "/start", desc: "Launch bot" },
-    { command: "/help", desc: "Show help" },
-  ],
-};
-
-const mockInternalSettings = {
-  token_masked: "••••••••••••••••••",
-  token_unmasked: "123456789:ABCdefGHIjklMNOpqrsTUVwxyz",
-  active: true,
-};
-
-const mockConnectedCourses = [
-  { id: "greek_a1", title: "Greek A1" },
-  { id: "sales_101", title: "Sales 101" },
-  { id: "hr_onboard", title: "HR Onboard" },
-];
 
 interface BotManagementProps {
   initialBotId?: string;
@@ -49,7 +23,6 @@ export function BotManagement({ initialBotId }: BotManagementProps = {}) {
   const [loading, setLoading] = useState(true);
   const [loadingBotDetails, setLoadingBotDetails] = useState(false);
   const [isAddBotModalOpen, setIsAddBotModalOpen] = useState(false);
-  const [isAttachCourseModalOpen, setIsAttachCourseModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
@@ -135,21 +108,6 @@ export function BotManagement({ initialBotId }: BotManagementProps = {}) {
         // Проверяем, не был ли запрос отменен
         if (cancelled) return;
 
-        // Fetch connected courses
-        let connectedCourses: Array<{ id: string; title: string }> = [];
-        try {
-          const coursesResponse = await fetch(`/api/bots/${selectedBotId}/courses`);
-          if (coursesResponse.ok) {
-            const coursesData = await coursesResponse.json();
-            connectedCourses = coursesData.courses || [];
-          }
-        } catch (error) {
-          console.warn("Failed to load connected courses:", error);
-        }
-
-        // Проверяем еще раз после загрузки курсов
-        if (cancelled) return;
-
         // Формируем Telegram info на основе данных бота
         // TODO: Fetch Telegram info from API if endpoint exists
         // For now, construct from bot data
@@ -176,7 +134,6 @@ export function BotManagement({ initialBotId }: BotManagementProps = {}) {
             token_masked: botData.bot_token || "••••••••••••••••••",
             active: botData.is_active,
           },
-          connected_courses: connectedCourses,
         };
 
         console.log('Setting bot details:', newBotDetails);
@@ -344,76 +301,6 @@ export function BotManagement({ initialBotId }: BotManagementProps = {}) {
     }
   };
 
-  const handleAddCourse = () => {
-    if (!selectedBotId) {
-      toast({
-        title: "No bot selected",
-        description: "Please select a bot first",
-        variant: "destructive",
-      });
-      return;
-    }
-    setIsAttachCourseModalOpen(true);
-  };
-
-  const handleAttachCourses = async (courseIds: string[]) => {
-    if (!selectedBotId) {
-      throw new Error("No bot selected");
-    }
-
-    try {
-      const response = await fetch(`/api/bots/${selectedBotId}/courses`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          course_ids: courseIds,
-          environment: "prod", // Можно сделать настраиваемым
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error("Error response:", errorData);
-        // Если есть детальные ошибки, показываем их
-        if (errorData.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
-          const errorMessages = errorData.errors.map((e: any) => 
-            `Course "${e.course_id}": ${e.error}`
-          ).join("; ");
-          throw new Error(errorMessages || errorData.message || "Failed to attach courses");
-        }
-        throw new Error(errorData.message || errorData.error || "Failed to attach courses");
-      }
-
-      // Обновляем список подключенных курсов
-      await reloadConnectedCourses();
-    } catch (error) {
-      console.error("Error attaching courses:", error);
-      throw error;
-    }
-  };
-
-  const reloadConnectedCourses = async () => {
-    if (!selectedBotId || !botDetails) return;
-
-    try {
-      const coursesResponse = await fetch(`/api/bots/${selectedBotId}/courses`);
-      if (coursesResponse.ok) {
-        const coursesData = await coursesResponse.json();
-        const connectedCourses = coursesData.courses || [];
-
-        // Обновляем botDetails с новым списком курсов
-        setBotDetails({
-          ...botDetails,
-          connected_courses: connectedCourses,
-        });
-      }
-    } catch (error) {
-      console.warn("Failed to reload connected courses:", error);
-    }
-  };
-
   const handleDelete = async () => {
     if (!selectedBotId || !botDetails) return;
 
@@ -488,8 +375,6 @@ export function BotManagement({ initialBotId }: BotManagementProps = {}) {
           loading={loadingBotDetails}
           onToggleActive={handleToggleActive}
           onTestConnection={handleTestConnection}
-          onAddCourse={handleAddCourse}
-          onCourseRemoved={reloadConnectedCourses}
         />
 
         {/* Delete Button Section */}
@@ -524,25 +409,6 @@ export function BotManagement({ initialBotId }: BotManagementProps = {}) {
         }))}
       />
 
-      {/* Attach Course Modal */}
-      {selectedBotId && (
-        <AttachCourseModal
-          isOpen={isAttachCourseModalOpen}
-          botId={selectedBotId}
-          connectedCourseIds={(botDetails?.connected_courses || []).map((c) => c.id)}
-          onClose={() => setIsAttachCourseModalOpen(false)}
-          onAttach={handleAttachCourses}
-          onCreateCourse={() => {
-            setIsAttachCourseModalOpen(false);
-            router.push('/course-editor');
-            toast({
-              title: "Create Course",
-              description: "Redirecting to course creation page",
-            });
-          }}
-        />
-      )}
-
       {/* Delete Confirmation Modal */}
       {isDeleteModalOpen && selectedBotId && botDetails && (
         <div
@@ -561,7 +427,7 @@ export function BotManagement({ initialBotId }: BotManagementProps = {}) {
                   Are you sure you want to delete this bot? This action cannot be undone.
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  This will permanently delete the bot and all associated course deployments.
+                  This will permanently delete the bot.
                 </p>
               </div>
               {!isDeleting && (

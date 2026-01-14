@@ -6,13 +6,16 @@
 
 ## Обзор
 
-Данный документ описывает новую схему базы данных для перехода ProfoChatBot к multi-tenant SaaS архитектуре. Схема обеспечивает:
+Данный документ описывает схему базы данных для ProfoChatBot с multi-tenant SaaS архитектурой и моделью Групп. Схема обеспечивает:
 
 - **Multi-tenancy** через таблицу `account`
-- **Разделение курсов и ботов** через `course_deployment`
-- **Управление доступом** через `enrollment_token`
+- **Разделение курсов и ботов** через `group` (группы)
+- **Управление доступом** через `invite_link` (пригласительные ссылки)
+- **Управление расписанием** через `schedule` (опциональное расписание для групп)
 - **Авторизацию создателей** через `account_member`
 - **Обратную совместимость** с существующими данными
+
+**Примечание:** Таблицы `course_deployment` и `enrollment_token` заменены на `group` и `invite_link` соответственно. Старые таблицы могут оставаться в базе для обратной совместимости во время миграции.
 
 ---
 
@@ -23,14 +26,17 @@
 - Все сущности привязаны к аккаунту
 - По умолчанию `account_id = 1` для существующих данных
 
-### 2. Разделение контента и развертывания
-- **Course** — логический курс (контент)
-- **Bot** — Telegram-бот (инфраструктура)
-- **CourseDeployment** — связь курса с ботом в конкретном окружении
+### 2. Разделение контента и развертывания через Группы
+- **Course** — логический курс (контент и последовательность Tasks)
+- **Bot** — Telegram-бот (канал доставки)
+- **Group** — контейнер исполнения курса (связывает бота, курс, студентов и опциональное расписание)
+- **InviteLink** — пригласительная ссылка для записи студентов в группу
+- **Schedule** — опциональное расписание для управления временем выхода задач
 
 ### 3. Ограничения
 - Один активный курс на студента на бота: `UNIQUE (bot_id, chat_id) WHERE is_active = TRUE`
-- Токены привязываются к deployment, а не к курсу напрямую
+- Пригласительные ссылки привязываются к группе, а не к курсу напрямую
+- Связь Бот ↔ Курс осуществляется только через Группы (не напрямую)
 
 ---
 
@@ -218,105 +224,175 @@ CREATE INDEX idx_course_element_order ON course_element (course_id, account_id, 
 
 ---
 
-### 6. CourseDeployment (Развертывание курса)
+### 6. Group (Группа)
 
-**Назначение:** Связь курса с ботом в конкретном окружении (prod/test).
+**Назначение:** Контейнер исполнения курса, объединяющий бота, курс, студентов и опциональное расписание.
 
 ```sql
-CREATE SEQUENCE IF NOT EXISTS course_deployment_deployment_id_seq;
+CREATE SEQUENCE IF NOT EXISTS group_group_id_seq;
 
-CREATE TABLE public.course_deployment (
-    deployment_id INT4 NOT NULL DEFAULT nextval('course_deployment_deployment_id_seq'::regclass),
-    course_id TEXT NOT NULL,
-    account_id INT4 NOT NULL,
+CREATE TABLE public.group (
+    group_id INT4 NOT NULL DEFAULT nextval('group_group_id_seq'::regclass),
+    account_id INT4 NOT NULL REFERENCES account(account_id) ON DELETE CASCADE,
     bot_id INT4 NOT NULL REFERENCES bot(bot_id) ON DELETE CASCADE,
-    environment TEXT DEFAULT 'prod',  -- prod, test, staging
-    is_active BOOLEAN DEFAULT TRUE,
+    course_id INT4 NOT NULL REFERENCES course(course_id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    settings JSONB,  -- environment-specific настройки
-    PRIMARY KEY (deployment_id),
-    FOREIGN KEY (course_id, account_id) REFERENCES course(course_id, account_id) ON DELETE CASCADE,
-    UNIQUE (bot_id, course_id, account_id, environment)  -- один курс на бота в окружении
+    is_active BOOLEAN DEFAULT TRUE,
+    settings JSONB,
+    PRIMARY KEY (group_id),
+    UNIQUE (bot_id, course_id, name)
 );
 
-CREATE INDEX idx_deployment_course ON course_deployment (course_id, account_id);
-CREATE INDEX idx_deployment_bot ON course_deployment (bot_id);
-CREATE INDEX idx_deployment_active ON course_deployment (bot_id, is_active);
+CREATE INDEX idx_group_account ON group (account_id);
+CREATE INDEX idx_group_bot ON group (bot_id);
+CREATE INDEX idx_group_course ON group (course_id);
+CREATE INDEX idx_group_active ON group (bot_id, is_active);
 ```
 
 **Поля:**
-- `deployment_id` — уникальный идентификатор развертывания
-- `course_id`, `account_id` — FK → course
+- `group_id` — уникальный идентификатор группы
+- `account_id` — FK → account
 - `bot_id` — FK → bot
-- `environment` — окружение: prod, test, staging
-- `is_active` — активно ли развертывание
+- `course_id` — FK → course
+- `name` — название группы
+- `description` — описание группы
 - `created_at`, `updated_at` — временные метки
-- `settings` — JSON с настройками развертывания
+- `is_active` — активна ли группа
+- `settings` — JSON с дополнительными настройками
 
 **Ограничения:**
-- Один курс может быть развернут на одном боте в одном окружении
-- Один курс может быть развернут на разных ботах или в разных окружениях
+- Группа связывает один Бот с одним Курсом
+- Один бот может иметь несколько групп с разными курсами
+- Один курс может быть в нескольких группах на одном боте
+- Уникальность по `(bot_id, course_id, name)` — одна группа с таким именем на бота-курс
 
 ---
 
-### 7. EnrollmentToken (Токен приглашения)
+### 7. InviteLink (Пригласительная ссылка)
 
-**Назначение:** Токены для приглашения студентов в курсы.
+**Назначение:** Пригласительные ссылки для записи студентов в группы.
 
 ```sql
-CREATE SEQUENCE IF NOT EXISTS enrollment_token_token_id_seq;
+CREATE SEQUENCE IF NOT EXISTS invite_link_invite_link_id_seq;
 
-CREATE TABLE public.enrollment_token (
-    token_id INT4 NOT NULL DEFAULT nextval('enrollment_token_token_id_seq'::regclass),
-    deployment_id INT4 NOT NULL REFERENCES course_deployment(deployment_id) ON DELETE CASCADE,
-    token TEXT NOT NULL UNIQUE,  -- уникальный токен
-    token_type TEXT DEFAULT 'public',  -- public, group, personal, external
-    max_uses INT4,  -- максимальное количество использований (NULL = без ограничений)
+CREATE TABLE public.invite_link (
+    invite_link_id INT4 NOT NULL DEFAULT nextval('invite_link_invite_link_id_seq'::regclass),
+    group_id INT4 NOT NULL REFERENCES group(group_id) ON DELETE CASCADE,
+    token TEXT NOT NULL UNIQUE,
+    max_uses INT4,
     current_uses INT4 DEFAULT 0,
-    expires_at TIMESTAMP,  -- срок действия (NULL = без срока)
+    expires_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_by INT8,  -- Telegram user ID создателя
+    created_by INT8,
     is_active BOOLEAN DEFAULT TRUE,
-    metadata JSONB,  -- дополнительные данные (UTM, группа, и т.д.)
-    PRIMARY KEY (token_id)
+    metadata JSONB,
+    PRIMARY KEY (invite_link_id)
 );
 
-CREATE INDEX idx_token_deployment ON enrollment_token (deployment_id);
-CREATE INDEX idx_token_token ON enrollment_token (token);
-CREATE INDEX idx_token_active ON enrollment_token (deployment_id, is_active);
-CREATE INDEX idx_token_expires ON enrollment_token (expires_at) WHERE expires_at IS NOT NULL;
+CREATE INDEX idx_invite_link_group ON invite_link (group_id);
+CREATE INDEX idx_invite_link_token ON invite_link (token);
+CREATE INDEX idx_invite_link_active ON invite_link (group_id, is_active);
+CREATE INDEX idx_invite_link_expires ON invite_link (expires_at) WHERE expires_at IS NOT NULL;
 ```
 
 **Поля:**
-- `token_id` — уникальный идентификатор
-- `deployment_id` — FK → course_deployment
+- `invite_link_id` — уникальный идентификатор
+- `group_id` — FK → group
 - `token` — уникальный токен (используется в deep link)
-- `token_type` — тип: public, group, personal, external
-- `max_uses` — максимальное количество использований
+- `max_uses` — максимальное количество использований (NULL = без ограничений)
 - `current_uses` — текущее количество использований
-- `expires_at` — срок действия
+- `expires_at` — срок действия (NULL = без срока)
 - `created_at` — дата создания
 - `created_by` — Telegram user ID создателя
-- `is_active` — активен ли токен
-- `metadata` — JSON с дополнительными данными (UTM, группа, и т.д.)
+- `is_active` — активна ли ссылка
+- `metadata` — JSON с дополнительными данными (UTM, источник, и т.д.)
 
 **Формат deep link:**
 ```
-https://t.me/<bot_username>?start=cd_<deployment_id>_<token>
+https://t.me/<bot_username>?start=group_<group_id>_<token>
 ```
 
-**Типы токенов:**
-- `public` — открытая ссылка, без ограничений
-- `group` — групповая ссылка, ограничение по `max_uses`
-- `personal` — персональная ссылка (одноразовая или многоразовая)
-- `external` — для интеграций с LMS/CRM/SSO
+**Особенности:**
+- Каждая группа может иметь одну или несколько пригласительных ссылок
+- При переходе по ссылке пользователь автоматически записывается в группу
+- Счетчик использований увеличивается автоматически
 
 ---
 
-### 8. Run (Сессия прохождения курса)
+### 8. Schedule (Расписание)
 
-**Назначение:** Сессия прохождения курса студентом.
+**Назначение:** Опциональное расписание для управления временем выхода задач (Tasks) в группе.
+
+```sql
+CREATE SEQUENCE IF NOT EXISTS schedule_schedule_id_seq;
+
+CREATE TABLE public.schedule (
+    schedule_id INT4 NOT NULL DEFAULT nextval('schedule_schedule_id_seq'::regclass),
+    group_id INT4 NOT NULL REFERENCES group(group_id) ON DELETE CASCADE,
+    schedule_type TEXT NOT NULL,  -- weekly, daily, custom
+    schedule_config JSONB NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_active BOOLEAN DEFAULT TRUE,
+    PRIMARY KEY (schedule_id),
+    UNIQUE (group_id)
+);
+
+CREATE INDEX idx_schedule_group ON schedule (group_id);
+CREATE INDEX idx_schedule_active ON schedule (group_id, is_active);
+```
+
+**Поля:**
+- `schedule_id` — уникальный идентификатор
+- `group_id` — FK → group (UNIQUE, одно расписание на группу)
+- `schedule_type` — тип расписания: `weekly`, `daily`, `custom`
+- `schedule_config` — JSON с конфигурацией расписания
+- `created_at`, `updated_at` — временные метки
+- `is_active` — активно ли расписание
+
+**Примеры `schedule_config`:**
+
+Еженедельное расписание:
+```json
+{
+  "day_of_week": 1,  // Понедельник (0 = воскресенье)
+  "time": "09:00",   // Время в формате HH:MM
+  "timezone": "UTC"
+}
+```
+
+Ежедневное расписание:
+```json
+{
+  "time": "09:00",
+  "timezone": "UTC"
+}
+```
+
+Кастомное расписание:
+```json
+{
+  "dates": [
+    "2024-01-01T09:00:00Z",
+    "2024-01-08T09:00:00Z",
+    "2024-01-15T09:00:00Z"
+  ]
+}
+```
+
+**Особенности:**
+- Расписание опционально — группа может существовать без расписания
+- При отсутствии расписания Tasks идут последовательно без пауз
+- При наличии расписания Tasks выходят в назначенное время
+
+---
+
+### 9. Run (Сессия прохождения курса)
+
+**Назначение:** Сессия прохождения курса студентом в рамках группы.
 
 ```sql
 CREATE SEQUENCE IF NOT EXISTS run_run_id_seq;
@@ -325,11 +401,11 @@ CREATE TABLE public.run (
     run_id INT4 NOT NULL DEFAULT nextval('run_run_id_seq'::regclass),
     account_id INT4 NOT NULL REFERENCES account(account_id) ON DELETE CASCADE,
     bot_id INT4 NOT NULL REFERENCES bot(bot_id) ON DELETE CASCADE,
-    deployment_id INT4 NOT NULL REFERENCES course_deployment(deployment_id) ON DELETE RESTRICT,
+    group_id INT4 NOT NULL REFERENCES group(group_id) ON DELETE RESTRICT,
     chat_id INT8 NOT NULL,
     username TEXT,
-    course_id TEXT NOT NULL,
-    token_id INT4 REFERENCES enrollment_token(token_id),  -- через какой токен зашел
+    course_id INT4 NOT NULL,
+    invite_link_id INT4 REFERENCES invite_link(invite_link_id),
     date_inserted TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     utm_source TEXT,
     utm_campaign TEXT,
@@ -337,16 +413,17 @@ CREATE TABLE public.run (
     utm_term TEXT,
     utm_content TEXT,
     is_ended BOOLEAN DEFAULT FALSE,
-    is_active BOOLEAN DEFAULT TRUE,  -- активна ли сессия
+    is_active BOOLEAN DEFAULT TRUE,
     ended_at TIMESTAMP,
-    metadata JSONB,  -- дополнительные данные
+    metadata JSONB,
     PRIMARY KEY (run_id),
-    UNIQUE (bot_id, chat_id) WHERE is_active = TRUE  -- один активный курс на студента на бота
+    UNIQUE (bot_id, chat_id) WHERE is_active = TRUE
 );
 
 CREATE INDEX idx_run_account ON run (account_id);
 CREATE INDEX idx_run_bot ON run (bot_id);
-CREATE INDEX idx_run_deployment ON run (deployment_id);
+CREATE INDEX idx_run_group ON run (group_id);
+CREATE INDEX idx_run_invite_link ON run (invite_link_id);
 CREATE INDEX idx_run_chat ON run (bot_id, chat_id);
 CREATE INDEX idx_run_course ON run (course_id, account_id);
 CREATE INDEX idx_run_active ON run (bot_id, is_active);
@@ -356,8 +433,8 @@ CREATE INDEX idx_run_ended ON run (is_ended, ended_at);
 **Изменения от текущей схемы:**
 - Добавлен `account_id`
 - `botname` заменен на `bot_id` (FK → bot)
-- Добавлен `deployment_id` (FK → course_deployment)
-- Добавлен `token_id` (FK → enrollment_token)
+- `deployment_id` заменен на `group_id` (FK → group)
+- `token_id` заменен на `invite_link_id` (FK → invite_link)
 - Добавлены расширенные UTM поля
 - Добавлен `is_active` для поддержки нескольких завершенных сессий
 - Добавлен `ended_at` для отслеживания времени завершения
@@ -367,6 +444,7 @@ CREATE INDEX idx_run_ended ON run (is_ended, ended_at);
 **Ограничение:**
 - Один студент может иметь только одну активную сессию на одном боте в момент времени
 - После завершения (`is_active = FALSE`) можно начать новую сессию
+- Сессия привязана к группе, а не к развертыванию курса
 
 ---
 
@@ -553,11 +631,13 @@ Account
   ├─ AccountMember (1:N)
   ├─ Bot (1:N)
   ├─ Course (1:N)
-  │   └─ CourseElement (1:N)
-  │   └─ CourseDeployment (1:N)
-  │        ├─ EnrollmentToken (1:N)
+  │   └─ CourseElement (1:N)  -- Tasks
+  │   └─ Group (1:N)
+  │        ├─ InviteLink (1:N)
+  │        ├─ Schedule (1:1, опционально)
   │        └─ Run (1:N)
   │             └─ Conversation (1:N)
+  ├─ Group (1:N)
   ├─ Run (1:N)
   ├─ Conversation (1:N)
   ├─ WaitingElement (1:N)
@@ -565,13 +645,14 @@ Account
   └─ CourseParticipants (1:N)
 
 Bot
-  ├─ CourseDeployment (1:N)
+  ├─ Group (1:N)
   ├─ Run (1:N)
   ├─ WaitingElement (1:N)
   └─ BannedParticipants (1:N)
 
-CourseDeployment
-  ├─ EnrollmentToken (1:N)
+Group
+  ├─ InviteLink (1:N)
+  ├─ Schedule (1:1, опционально)
   └─ Run (1:N)
 ```
 
@@ -587,17 +668,23 @@ CourseDeployment
    ```
    В таблице `run`
 
-2. **Один курс на бота в окружении:**
+2. **Одна группа с таким именем на бота-курс:**
    ```sql
-   UNIQUE (bot_id, course_id, account_id, environment)
+   UNIQUE (bot_id, course_id, name)
    ```
-   В таблице `course_deployment`
+   В таблице `group`
 
-3. **Уникальный токен:**
+3. **Одно расписание на группу:**
+   ```sql
+   UNIQUE (group_id)
+   ```
+   В таблице `schedule`
+
+4. **Уникальный токен пригласительной ссылки:**
    ```sql
    UNIQUE (token)
    ```
-   В таблице `enrollment_token`
+   В таблице `invite_link`
 
 4. **Уникальный bot_token:**
    ```sql
@@ -617,14 +704,19 @@ CourseDeployment
    CREATE INDEX idx_waiting_active ON waiting_element (is_waiting, waiting_till_date) WHERE is_waiting = TRUE;
    ```
 
-3. **Поиск по токену:**
+3. **Поиск по токену пригласительной ссылки:**
    ```sql
-   CREATE INDEX idx_token_token ON enrollment_token (token);
+   CREATE INDEX idx_invite_link_token ON invite_link (token);
    ```
 
-4. **Поиск развертываний курса:**
+4. **Поиск групп курса:**
    ```sql
-   CREATE INDEX idx_deployment_course ON course_deployment (course_id, account_id);
+   CREATE INDEX idx_group_course ON group (course_id);
+   ```
+
+5. **Поиск групп бота:**
+   ```sql
+   CREATE INDEX idx_group_bot ON group (bot_id);
    ```
 
 ---
@@ -644,18 +736,21 @@ CourseDeployment
 2. Добавить авторизацию через Telegram Web Login
 3. Создавать новые аккаунты через панель
 
-### Phase 2 — Разделение Course и Bot
+### Phase 2 — Разделение Course и Bot через Группы
 
-1. Создать таблицы `bot`, `course_deployment`
+1. Создать таблицы `bot`, `group`, `invite_link`, `schedule`
 2. Мигрировать данные из `course` (убрать `bot_name` из PK)
-3. Создать `course_deployment` для существующих связей курс-бот
-4. Обновить код для работы с `course_deployment`
+3. Преобразовать существующие `course_deployment` в `group`
+4. Преобразовать существующие `enrollment_token` в `invite_link`
+5. Обновить код для работы с группами
 
-### Phase 3 — EnrollmentToken
+### Phase 3 — Миграция Run на Groups
 
-1. Создать таблицу `enrollment_token`
-2. Обновить формат deep link на `/start=cd_<deployment>_<token>`
-3. Добавить валидацию токенов перед созданием `run`
+1. Добавить поля `group_id`, `invite_link_id` в таблицу `run` (nullable)
+2. Обновить существующие записи `run` для ссылки на группы
+3. Обновить формат deep link на `/start=group_<group_id>_<token>`
+4. Добавить валидацию пригласительных ссылок перед созданием `run`
+5. Сделать `group_id` NOT NULL после завершения миграции данных
 
 ### Phase 4 — Multi-Bot
 
@@ -665,8 +760,8 @@ CourseDeployment
 
 ### Phase 5 — Очистка
 
-1. Удалить устаревшие поля (`botname` из `run`, и т.д.)
-2. Удалить legacy таблицы, если они больше не нужны
+1. Удалить устаревшие поля (`botname` из `run`, `deployment_id`, `token_id`, и т.д.)
+2. Удалить legacy таблицы (`course_deployment`, `enrollment_token`), если они больше не нужны
 3. Оптимизировать индексы
 
 ---
@@ -676,27 +771,38 @@ CourseDeployment
 ### Получение активных сессий для аккаунта
 
 ```sql
-SELECT r.run_id, r.chat_id, r.username, c.title, b.bot_name, r.date_inserted
+SELECT r.run_id, r.chat_id, r.username, c.title, b.bot_name, g.name as group_name, r.date_inserted
 FROM run r
-JOIN course_deployment cd ON r.deployment_id = cd.deployment_id
-JOIN course c ON cd.course_id = c.course_id AND cd.account_id = c.account_id
+JOIN group g ON r.group_id = g.group_id
+JOIN course c ON g.course_id = c.course_id AND g.account_id = c.account_id
 JOIN bot b ON r.bot_id = b.bot_id
 WHERE r.account_id = $1 AND r.is_active = TRUE
 ORDER BY r.date_inserted DESC;
 ```
 
-### Получение статистики по токенам
+### Получение статистики по пригласительным ссылкам
 
 ```sql
 SELECT 
-    et.token_type,
-    COUNT(*) as total_tokens,
-    SUM(et.current_uses) as total_uses,
-    AVG(et.current_uses) as avg_uses
-FROM enrollment_token et
-JOIN course_deployment cd ON et.deployment_id = cd.deployment_id
-WHERE cd.account_id = $1 AND et.is_active = TRUE
-GROUP BY et.token_type;
+    COUNT(*) as total_links,
+    SUM(il.current_uses) as total_uses,
+    AVG(il.current_uses) as avg_uses,
+    COUNT(*) FILTER (WHERE il.max_uses IS NOT NULL AND il.current_uses >= il.max_uses) as exhausted_links
+FROM invite_link il
+JOIN group g ON il.group_id = g.group_id
+WHERE g.account_id = $1 AND il.is_active = TRUE;
+```
+
+### Получение групп для курса
+
+```sql
+SELECT g.group_id, g.name, g.description, b.bot_name, COUNT(r.run_id) as student_count
+FROM group g
+JOIN bot b ON g.bot_id = b.bot_id
+LEFT JOIN run r ON g.group_id = r.group_id AND r.is_active = TRUE
+WHERE g.course_id = $1 AND g.account_id = $2 AND g.is_active = TRUE
+GROUP BY g.group_id, g.name, g.description, b.bot_name
+ORDER BY g.created_at DESC;
 ```
 
 ### Получение прогресса студента
@@ -746,14 +852,17 @@ ORDER BY we.waiting_till_date ASC;
 ### Сохранение совместимости
 
 1. **Legacy поля:** Поля `botname`, `creator_id` остаются для обратной совместимости
-2. **Default account:** По умолчанию `account_id = 1` для существующих данных
-3. **YAML поддержка:** Поле `yaml` в `course` сохраняется для импорта/экспорта
+2. **Legacy таблицы:** Таблицы `course_deployment` и `enrollment_token` могут оставаться для обратной совместимости во время миграции
+3. **Default account:** По умолчанию `account_id = 1` для существующих данных
+4. **YAML поддержка:** Поле `yaml` в `course` сохраняется для импорта/экспорта
+5. **Nullable поля:** Поля `group_id` и `invite_link_id` в таблице `run` могут быть nullable во время миграции
 
 ### Постепенная миграция
 
-1. Новые функции используют новую схему
-2. Старые функции продолжают работать с legacy полями
+1. Новые функции используют новую схему (Groups)
+2. Старые функции продолжают работать с legacy полями и таблицами
 3. Миграция данных происходит постепенно через скрипты
+4. После завершения миграции можно удалить legacy таблицы и сделать поля NOT NULL
 
 ---
 
@@ -772,10 +881,17 @@ ORDER BY we.waiting_till_date ASC;
 Данная схема обеспечивает:
 
 ✅ **Multi-tenancy** через `account`  
-✅ **Разделение контента и развертывания** через `course_deployment`  
-✅ **Гибкое управление доступом** через `enrollment_token`  
+✅ **Разделение контента и развертывания** через `group` (группы)  
+✅ **Гибкое управление доступом** через `invite_link` (пригласительные ссылки)  
+✅ **Управление расписанием** через `schedule` (опциональное расписание для групп)  
 ✅ **Масштабируемость** через правильные индексы и ограничения  
 ✅ **Обратную совместимость** с существующими данными  
 ✅ **Гибкость** для будущих расширений через JSONB поля
 
-Схема готова к поэтапной миграции без нарушения работы существующей системы.
+**Ключевые изменения:**
+- Связь Бот ↔ Курс теперь только через Группы (не напрямую)
+- Пригласительные ссылки привязаны к группам, а не к развертываниям
+- Опциональное расписание для управления временем выхода задач
+- Более понятная модель для образовательных сценариев
+
+Схема готова к поэтапной миграции без нарушения работы существующей системы. Подробнее см. `docs/reqs/groups_model.md`.

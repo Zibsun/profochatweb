@@ -39,14 +39,14 @@ export function Header() {
               Course Editor
             </Link>
             <Link
-              href="/deployments"
+              href="/groups"
               className={`${
-                isActive('/deployments')
+                isActive('/groups')
                   ? 'text-blue-600 font-medium'
                   : 'text-gray-700 hover:text-blue-600'
               }`}
             >
-              Deployments
+              Groups
             </Link>
           </nav>
         </div>

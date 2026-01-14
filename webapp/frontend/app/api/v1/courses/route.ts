@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     // Get deployments with bot information for each course
     const coursesWithBots: CourseWithBots[] = await Promise.all(
       dbCourses.map(async (course) => {
-        // Get bots connected to this course through deployments
+        // Get bots connected to this course through groups
         const deployments = await query<{
           bot_id: number;
           bot_name: string;
@@ -38,9 +38,9 @@ export async function GET(request: NextRequest) {
             b.bot_id,
             b.bot_name,
             b.display_name
-          FROM course_deployment cd
-          INNER JOIN bot b ON cd.bot_id = b.bot_id
-          WHERE cd.course_id = $1 AND cd.account_id = $2 AND b.account_id = $2
+          FROM course_group cg
+          INNER JOIN bot b ON cg.bot_id = b.bot_id
+          WHERE cg.course_id = $1 AND cg.account_id = $2 AND b.account_id = $2
           ORDER BY b.bot_name`,
           [course.course_id, accountId]
         );

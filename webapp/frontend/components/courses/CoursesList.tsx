@@ -14,18 +14,11 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-interface Bot {
-  bot_id: number;
-  bot_name: string;
-  display_name?: string;
-}
-
 interface Course {
   course_id: number;
   course_code: string;
   title?: string;
   description?: string;
-  bots: Bot[];
 }
 
 interface CoursesResponse {
@@ -227,9 +220,6 @@ export function CoursesList() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Course Title
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Connected Bots
-                    </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Actions
                     </th>
@@ -246,23 +236,6 @@ export function CoursesList() {
                         >
                           {course.title || course.course_code}
                         </Link>
-                      </td>
-                      <td className="px-6 py-4">
-                        {course.bots.length === 0 ? (
-                          <span className="text-sm text-muted-foreground">No bots connected</span>
-                        ) : (
-                          <div className="flex flex-wrap gap-2">
-                            {course.bots.map((bot) => (
-                              <Link
-                                key={bot.bot_id}
-                                href={`/bots?botId=${bot.bot_id}`}
-                                className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-sky-100 text-sky-800 border border-sky-200 hover:bg-sky-200 transition-colors"
-                              >
-                                {bot.display_name || bot.bot_name}
-                              </Link>
-                            ))}
-                          </div>
-                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end gap-2">
@@ -347,21 +320,6 @@ export function CoursesList() {
                 <div className="flex-1">
                   <h2 className="text-xl font-semibold text-foreground mb-2">Cannot Delete Course</h2>
                   <p className="text-muted-foreground mb-3">{showDeleteError.message}</p>
-                  {showDeleteError.bots.length > 0 && (
-                    <div className="mt-3">
-                      <p className="text-sm font-medium text-foreground mb-2">Connected bots:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {showDeleteError.bots.map((botName) => (
-                          <span
-                            key={botName}
-                            className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-sky-100 text-sky-800 border border-sky-200"
-                          >
-                            {botName}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
                 <button
                   onClick={() => setShowDeleteError(null)}

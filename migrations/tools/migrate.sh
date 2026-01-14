@@ -152,11 +152,21 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+# Extract version from migration filename
+get_migration_version() {
+    local migration_name="$1"
+    echo "$migration_name" | cut -d'_' -f1
+}
+
 # Apply migration
 apply_migration() {
     local migration_file="$1"
     local migration_name=$(basename "$migration_file")
-    local migration_version=$(basename "$migration_file" .sql | cut -d'_' -f1)
+    local migration_version=$(get_migration_version "$(basename "$migration_file" .sql)")
+    
+    echo -e "${BLUE}[DEBUG]${NC} apply_migration() called with: $migration_file"
+    echo -e "${BLUE}[DEBUG]${NC}   migration_name: $migration_name"
+    echo -e "${BLUE}[DEBUG]${NC}   migration_version: $migration_version"
     
     if [ "$DRY_RUN" = true ]; then
         echo -e "${BLUE}[DRY RUN]${NC} Would apply: $migration_name"
@@ -166,15 +176,29 @@ apply_migration() {
     echo -e "${BLUE}Applying:${NC} $migration_name"
     
     local start_time=$(date +%s%N)
+    echo -e "${BLUE}[DEBUG]${NC} Executing: psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f $migration_file"
     
     if psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f "$migration_file" 2>&1; then
         local end_time=$(date +%s%N)
         local duration_ms=$(( (end_time - start_time) / 1000000 ))
         
+        echo -e "${BLUE}[DEBUG]${NC} Migration SQL executed successfully (${duration_ms}ms)"
+        echo -e "${BLUE}[DEBUG]${NC} Checking if migration was recorded in schema_migrations..."
+        
+        # Check if migration was recorded
+        local recorded=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c \
+            "SELECT version FROM schema_migrations WHERE version = '$migration_version';" 2>/dev/null | tr -d ' ' || echo "")
+        
+        if [ -n "$recorded" ]; then
+            echo -e "${BLUE}[DEBUG]${NC} Migration $migration_version found in schema_migrations"
+        else
+            echo -e "${YELLOW}[DEBUG]${NC} WARNING: Migration $migration_version NOT found in schema_migrations after execution"
+        fi
+        
         # Update execution time if migration was recorded
         psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c \
             "UPDATE schema_migrations SET execution_time_ms = $duration_ms WHERE version = '$migration_version';" \
-            > /dev/null 2>&1 || true
+            > /dev/null 2>&1 || echo -e "${BLUE}[DEBUG]${NC} Could not update execution_time_ms (migration may not be recorded)"
         
         echo -e "${GREEN}✓ Applied:${NC} $migration_name (${duration_ms}ms)"
         return 0
@@ -197,17 +221,15 @@ fi
 
 echo "Checking migration status..."
 
-APPLIED=$(get_applied_migrations)
-ALL_MIGRATIONS=$(get_all_migrations)
-
-if [ -z "$ALL_MIGRATIONS" ]; then
-    echo "No migration files found in $MIGRATIONS_DIR"
-    exit 0
-fi
+# Debug: Show database connection info
+echo -e "${BLUE}[DEBUG]${NC} Database: ${DB_HOST}:${DB_PORT}/${DB_NAME} (user: ${DB_USER})"
+echo ""
 
 # Check if schema_migrations table exists
 TABLE_EXISTS=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c \
     "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'schema_migrations');" 2>/dev/null | tr -d ' ')
+
+echo -e "${BLUE}[DEBUG]${NC} schema_migrations table exists: ${TABLE_EXISTS}"
 
 if [ "$TABLE_EXISTS" != "t" ]; then
     echo -e "${YELLOW}Warning:${NC} schema_migrations table does not exist."
@@ -215,18 +237,56 @@ if [ "$TABLE_EXISTS" != "t" ]; then
     echo ""
 fi
 
+# Get applied migrations
+APPLIED=$(get_applied_migrations)
+echo -e "${BLUE}[DEBUG]${NC} Applied migrations from DB:"
+if [ -z "$APPLIED" ]; then
+    echo -e "${BLUE}[DEBUG]${NC}   (none)"
+else
+    echo "$APPLIED" | while read -r version; do
+        echo -e "${BLUE}[DEBUG]${NC}   - $version"
+    done
+fi
+echo ""
+
+# Get all migration files
+ALL_MIGRATIONS=$(get_all_migrations)
+echo -e "${BLUE}[DEBUG]${NC} Migration files found in $MIGRATIONS_DIR:"
+if [ -z "$ALL_MIGRATIONS" ]; then
+    echo -e "${BLUE}[DEBUG]${NC}   (none)"
+    echo "No migration files found in $MIGRATIONS_DIR"
+    exit 0
+else
+    echo "$ALL_MIGRATIONS" | while read -r migration; do
+        echo -e "${BLUE}[DEBUG]${NC}   - $migration"
+    done
+fi
+echo ""
+
 PENDING=0
 PENDING_LIST=""
 
+echo -e "${BLUE}[DEBUG]${NC} Checking each migration:"
 for migration in $ALL_MIGRATIONS; do
-    if ! echo "$APPLIED" | grep -q "^${migration}$"; then
-        if [ -n "$TARGET_VERSION" ] && [ "$migration" \> "$TARGET_VERSION" ]; then
+    # Extract version number from migration filename (e.g., "0001_create_schema_migrations" -> "0001")
+    migration_version=$(echo "$migration" | cut -d'_' -f1)
+    
+    echo -e "${BLUE}[DEBUG]${NC}   Checking: $migration (version: $migration_version)"
+    
+    # Check if version exists in applied migrations (compare version numbers, not full filenames)
+    if echo "$APPLIED" | grep -q "^${migration_version}$"; then
+        echo -e "${BLUE}[DEBUG]${NC}   ✓ $migration - APPLIED (version $migration_version found in schema_migrations)"
+    else
+        echo -e "${BLUE}[DEBUG]${NC}   ○ $migration - PENDING (version $migration_version not found in schema_migrations)"
+        if [ -n "$TARGET_VERSION" ] && [ "$migration_version" \> "$TARGET_VERSION" ]; then
+            echo -e "${BLUE}[DEBUG]${NC}     (skipping, target version: $TARGET_VERSION)"
             break
         fi
         PENDING_LIST="$PENDING_LIST $migration"
         PENDING=$((PENDING + 1))
     fi
 done
+echo ""
 
 if [ $PENDING -eq 0 ]; then
     echo -e "${GREEN}✓ All migrations are up to date.${NC}"
@@ -237,6 +297,10 @@ if [ $PENDING -eq 0 ]; then
     done
     exit 0
 fi
+
+echo -e "${BLUE}[DEBUG]${NC} Pending migrations count: $PENDING"
+echo -e "${BLUE}[DEBUG]${NC} Pending migrations list: $PENDING_LIST"
+echo ""
 
 echo -e "${YELLOW}Found $PENDING pending migration(s):${NC}"
 for migration in $PENDING_LIST; do
@@ -255,19 +319,34 @@ fi
 
 APPLIED_COUNT=0
 for migration in $PENDING_LIST; do
-    if [ -n "$TARGET_VERSION" ] && [ "$migration" \> "$TARGET_VERSION" ]; then
+    # Extract version number from migration filename
+    migration_version=$(get_migration_version "$migration")
+    
+    if [ -n "$TARGET_VERSION" ] && [ "$migration_version" \> "$TARGET_VERSION" ]; then
+        echo -e "${BLUE}[DEBUG]${NC} Reached target version $TARGET_VERSION, stopping"
         break
     fi
     
     migration_file="$MIGRATIONS_DIR/${migration}.sql"
+    echo -e "${BLUE}[DEBUG]${NC} Processing migration: $migration (version: $migration_version)"
+    echo -e "${BLUE}[DEBUG]${NC} Migration file: $migration_file"
+    
+    if [ ! -f "$migration_file" ]; then
+        echo -e "${RED}[DEBUG]${NC} ERROR: Migration file not found: $migration_file"
+        echo -e "${RED}Migration file not found: $migration_file${NC}"
+        exit 1
+    fi
+    
     if apply_migration "$migration_file"; then
         APPLIED_COUNT=$((APPLIED_COUNT + 1))
+        echo -e "${BLUE}[DEBUG]${NC} Successfully applied migration: $migration (version: $migration_version)"
     else
         echo ""
         echo -e "${RED}Migration failed. Stopping.${NC}"
         echo "You may need to manually fix the issue and re-run migrations."
         exit 1
     fi
+    echo ""
 done
 
 echo ""
