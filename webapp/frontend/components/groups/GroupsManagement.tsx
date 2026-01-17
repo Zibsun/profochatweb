@@ -187,17 +187,30 @@ export function GroupsManagement({ initialGroupId }: GroupsManagementProps = {})
     await loadGroupDetails(selectedGroupId);
   };
 
-  const handleDeactivateInvite = async (inviteId: number) => {
-    const res = await fetch(`/api/invites/${inviteId}`, {
-      method: "PATCH",
+  const handleToggleInviteStatus = async (inviteId: number, isActive: boolean) => {
+    if (!selectedGroupId) return;
+    const res = await fetch(`/api/groups/${selectedGroupId}/invites/${inviteId}`, {
+      method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ is_active: false }),
+      body: JSON.stringify({ is_active: isActive }),
     });
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.message || "Failed to deactivate invite");
+      throw new Error(errorData.message || "Failed to update invite status");
     }
-    if (selectedGroupId) await loadGroupDetails(selectedGroupId);
+    await loadGroupDetails(selectedGroupId);
+  };
+
+  const handleDeleteInvite = async (inviteId: number) => {
+    if (!selectedGroupId) return;
+    const res = await fetch(`/api/groups/${selectedGroupId}/invites/${inviteId}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || "Failed to delete invite");
+    }
+    await loadGroupDetails(selectedGroupId);
   };
 
   const handleSaveDetails = async (payload: {
@@ -239,7 +252,8 @@ export function GroupsManagement({ initialGroupId }: GroupsManagementProps = {})
         onToggleActive={handleToggleActive}
         onSaveDetails={handleSaveDetails}
         onCreateInvite={handleCreateInvite}
-        onDeactivateInvite={handleDeactivateInvite}
+        onToggleInviteStatus={handleToggleInviteStatus}
+        onDeleteInvite={handleDeleteInvite}
       />
     </div>
   );

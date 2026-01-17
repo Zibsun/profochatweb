@@ -17,6 +17,13 @@ export function GroupsSidebar({
   loading,
   onSelectGroup,
 }: GroupsSidebarProps) {
+  // Sort groups by created_at desc
+  const sortedGroups = [...groups].sort((a, b) => {
+    const dateA = new Date(a.created_at).getTime();
+    const dateB = new Date(b.created_at).getTime();
+    return dateB - dateA;
+  });
+
   return (
     <aside className="border-r border-border bg-card flex flex-col shrink-0 w-[260px]">
       <div className="px-3 py-2 border-b border-border">
@@ -40,7 +47,7 @@ export function GroupsSidebar({
           <div className="text-center text-muted-foreground py-8 px-2">
             <p className="text-xs">Loading groups...</p>
           </div>
-        ) : groups.length === 0 ? (
+        ) : sortedGroups.length === 0 ? (
           <div className="text-center text-muted-foreground py-8 px-2">
             <div className="text-sm font-medium text-foreground mb-1">No groups yet</div>
             <Link
@@ -51,14 +58,16 @@ export function GroupsSidebar({
             </Link>
           </div>
         ) : (
-          groups.map((g) => {
+          sortedGroups.map((g) => {
             const isSelected = selectedGroupId === String(g.group_id);
             return (
               <div
                 key={g.group_id}
                 onClick={() => onSelectGroup(String(g.group_id))}
                 className={`w-full text-left px-2 py-1.5 rounded-md transition-all cursor-pointer ${
-                  isSelected ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground"
+                  isSelected
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "hover:bg-muted text-foreground"
                 }`}
               >
                 <span className="text-xs truncate block">{g.name}</span>

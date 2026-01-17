@@ -26,8 +26,8 @@ export async function GET(
     }
 
     // Check if group exists and belongs to account
-    const group = await queryOne<{ group_id: number }>(
-      `SELECT group_id FROM "group" WHERE group_id = $1 AND account_id = $2`,
+    const group = await queryOne<{ course_group_id: number }>(
+      `SELECT course_group_id FROM course_group WHERE course_group_id = $1 AND account_id = $2`,
       [groupIdNum, accountId]
     );
 
@@ -44,8 +44,9 @@ export async function GET(
     // Get schedule
     const schedule = await queryOne<Schedule & {
       schedule_config: string;
+      course_group_id: number;
     }>(
-      `SELECT * FROM schedule WHERE group_id = $1 AND is_active = true LIMIT 1`,
+      `SELECT * FROM schedule WHERE course_group_id = $1 AND is_active = true LIMIT 1`,
       [groupIdNum]
     );
 
@@ -55,13 +56,24 @@ export async function GET(
       });
     }
 
+    // Безопасный парсинг schedule_config
+    let scheduleConfig: any = {};
+    try {
+      if (typeof schedule.schedule_config === 'string') {
+        scheduleConfig = JSON.parse(schedule.schedule_config);
+      } else if (schedule.schedule_config) {
+        scheduleConfig = schedule.schedule_config;
+      }
+    } catch (parseError) {
+      console.error('Error parsing schedule_config:', parseError);
+      scheduleConfig = {};
+    }
+
     const formattedSchedule: Schedule = {
       schedule_id: schedule.schedule_id,
-      group_id: schedule.group_id,
+      group_id: schedule.course_group_id, // Используем course_group_id как group_id
       schedule_type: schedule.schedule_type as 'weekly' | 'daily' | 'custom',
-      schedule_config: typeof schedule.schedule_config === 'string'
-        ? JSON.parse(schedule.schedule_config)
-        : schedule.schedule_config,
+      schedule_config: scheduleConfig,
       is_active: schedule.is_active,
       created_at: schedule.created_at,
       updated_at: schedule.updated_at,
@@ -128,8 +140,8 @@ export async function POST(
     }
 
     // Check if group exists and belongs to account
-    const group = await queryOne<{ group_id: number }>(
-      `SELECT group_id FROM "group" WHERE group_id = $1 AND account_id = $2`,
+    const group = await queryOne<{ course_group_id: number }>(
+      `SELECT course_group_id FROM course_group WHERE course_group_id = $1 AND account_id = $2`,
       [groupIdNum, accountId]
     );
 
@@ -145,20 +157,20 @@ export async function POST(
 
     // Check if schedule already exists
     const existingSchedule = await queryOne<{ schedule_id: number }>(
-      `SELECT schedule_id FROM schedule WHERE group_id = $1`,
+      `SELECT schedule_id FROM schedule WHERE course_group_id = $1`,
       [groupIdNum]
     );
 
     let result;
     if (existingSchedule) {
       // Update existing schedule
-      result = await query<Schedule>(
+      result = await query<Schedule & { course_group_id: number }>(
         `UPDATE schedule 
          SET schedule_type = $1,
              schedule_config = $2,
              is_active = $3,
              updated_at = CURRENT_TIMESTAMP
-         WHERE group_id = $4
+         WHERE course_group_id = $4
          RETURNING *`,
         [
           body.schedule_type,
@@ -169,9 +181,9 @@ export async function POST(
       );
     } else {
       // Create new schedule
-      result = await query<Schedule>(
+      result = await query<Schedule & { course_group_id: number }>(
         `INSERT INTO schedule (
-          group_id,
+          course_group_id,
           schedule_type,
           schedule_config,
           is_active
@@ -191,13 +203,25 @@ export async function POST(
     }
 
     const schedule = result[0];
+    
+    // Безопасный парсинг schedule_config
+    let scheduleConfig: any = {};
+    try {
+      if (typeof schedule.schedule_config === 'string') {
+        scheduleConfig = JSON.parse(schedule.schedule_config);
+      } else if (schedule.schedule_config) {
+        scheduleConfig = schedule.schedule_config;
+      }
+    } catch (parseError) {
+      console.error('Error parsing schedule_config:', parseError);
+      scheduleConfig = {};
+    }
+
     const formattedSchedule: Schedule = {
       schedule_id: schedule.schedule_id,
-      group_id: schedule.group_id,
+      group_id: schedule.course_group_id, // Используем course_group_id как group_id
       schedule_type: schedule.schedule_type as 'weekly' | 'daily' | 'custom',
-      schedule_config: typeof schedule.schedule_config === 'string'
-        ? JSON.parse(schedule.schedule_config)
-        : schedule.schedule_config,
+      schedule_config: scheduleConfig,
       is_active: schedule.is_active,
       created_at: schedule.created_at,
       updated_at: schedule.updated_at,
@@ -243,8 +267,8 @@ export async function DELETE(
     }
 
     // Check if group exists and belongs to account
-    const group = await queryOne<{ group_id: number }>(
-      `SELECT group_id FROM "group" WHERE group_id = $1 AND account_id = $2`,
+    const group = await queryOne<{ course_group_id: number }>(
+      `SELECT course_group_id FROM course_group WHERE course_group_id = $1 AND account_id = $2`,
       [groupIdNum, accountId]
     );
 
@@ -260,7 +284,7 @@ export async function DELETE(
 
     // Delete schedule
     await query(
-      `DELETE FROM schedule WHERE group_id = $1`,
+      `DELETE FROM schedule WHERE course_group_id = $1`,
       [groupIdNum]
     );
 

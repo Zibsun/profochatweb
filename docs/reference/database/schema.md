@@ -452,19 +452,40 @@ db.add_replace_course(
 | Поле | Тип | Описание |
 |------|-----|----------|
 | `courseparticipant_id` | int4 (PK, AUTO) | Уникальный идентификатор |
-| `course_id` | text | Идентификатор курса |
+| `course_code` | text | Идентификатор курса (legacy, для обратной совместимости) |
+| `course_id` | int4 (FK → course) | Идентификатор курса (INT, добавлено в миграции 0004) |
 | `username` | text | Имя пользователя в Telegram |
 | `account_id` | int4 (FK → account) | Идентификатор аккаунта (добавлено в SaaS миграции) |
 | `chat_id` | int8 | Telegram chat ID пользователя (добавлено в SaaS миграции) |
 | `added_at` | timestamp | Дата добавления участника (добавлено в SaaS миграции) |
 | `added_by` | int8 | Telegram user ID пользователя, добавившего участника (добавлено в SaaS миграции) |
+| `invite_link_id` | int4 (FK → invite_link, NULLABLE) | Идентификатор пригласительной ссылки, через которую присоединился участник (добавлено в миграции 0006) |
+| `course_group_id` | int4 (FK → course_group, NULLABLE) | Идентификатор группы курса, к которой относится участник (добавлено в миграции 0006) |
+
+**Внешние ключи:**
+- `courseparticipants_account_id_fkey` → `account(account_id)` ON DELETE CASCADE
+- `courseparticipants_course_fkey` → `course(course_id)` ON DELETE CASCADE
+- `courseparticipants_invite_link_fkey` → `invite_link(invite_link_id)` ON DELETE SET NULL
+- `courseparticipants_course_group_fkey` → `course_group(course_group_id)` ON DELETE CASCADE
 
 **Индексы:**
-- `idx_courseparticipants_2` на `(course_id, username)`
+- `idx_courseparticipants_account` на `account_id`
+- `idx_courseparticipants_chat` на `chat_id`
+- `idx_courseparticipants_course` на `(course_id, account_id)`
+- `idx_courseparticipants_coursecode` на `(course_code, account_id)`
+- `idx_courseparticipants_username` на `username`
+- `idx_courseparticipants_invite_link` на `invite_link_id` (WHERE invite_link_id IS NOT NULL)
+- `idx_courseparticipants_course_group` на `course_group_id` (WHERE course_group_id IS NOT NULL)
+- `idx_courseparticipants_group_account` на `(course_group_id, account_id)` (WHERE course_group_id IS NOT NULL)
+
+**Уникальные ограничения:**
+- `courseparticipants_unique` на `(course_id, account_id, COALESCE(chat_id, 0), COALESCE(username, ''))`
 
 **Назначение:**
 - Контроль доступа к ограниченным курсам
 - Белые списки пользователей для конкретных курсов
+- Отслеживание участников групп курсов
+- Отслеживание источника присоединения через invite links
 
 **Ключевые операции:**
 - `check_user_in_course()` - проверка доступа пользователя к курсу
@@ -472,6 +493,13 @@ db.add_replace_course(
 **Использование:**
 - Если курс помечен как `restricted: yes` в `courses.yml`, система проверяет наличие пользователя в этой таблице
 - При отсутствии доступа пользователь получает сообщение `decline_text`
+- Участники могут присоединяться к группам через invite links (поле `invite_link_id`)
+- Каждый участник может быть связан с конкретной группой курса (поле `course_group_id`)
+
+**Особенности:**
+- Поля `invite_link_id` и `course_group_id` являются nullable для обратной совместимости
+- При удалении invite link участник остается, но связь теряется (ON DELETE SET NULL)
+- При удалении группы курса все участники этой группы также удаляются (ON DELETE CASCADE)
 
 ### Таблица `bannedparticipants`
 

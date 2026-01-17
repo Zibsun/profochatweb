@@ -24,7 +24,7 @@ class CourseDB(Base):
     yaml = Column(Text)  # YAML представление курса
     title = Column(Text)
     description = Column(Text)
-    metadata = Column(JSONB)
+    course_metadata = Column('metadata', JSONB)  # Renamed to avoid SQLAlchemy reserved name
     is_active = Column(String, default=True)
     
     # Relationships

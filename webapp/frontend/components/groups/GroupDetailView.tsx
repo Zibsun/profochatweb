@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import { Group, Run, InviteLink } from '@/lib/types/types';
 import { useToast } from '@/hooks/use-toast';
+import { ScheduleTab } from './ScheduleTab';
+import { StudentsTab } from './StudentsTab';
 
 interface GroupDetailViewProps {
   groupId: number;
@@ -35,6 +37,7 @@ export function GroupDetailView({ groupId }: GroupDetailViewProps) {
   const [newName, setNewName] = useState('');
   const [runsStatusFilter, setRunsStatusFilter] = useState<'all' | 'active' | 'completed'>('all');
   const [copied, setCopied] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'schedule' | 'students'>('overview');
 
   const loadGroup = async () => {
     try {
@@ -362,7 +365,52 @@ export function GroupDetailView({ groupId }: GroupDetailViewProps) {
           </div>
         </div>
 
-        {/* Invite Links Block */}
+        {/* Tabs */}
+        {group && (
+          <div className="mb-6 border-b border-border">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setActiveTab('overview')}
+                className={`px-4 py-2 font-medium text-sm transition-colors ${
+                  activeTab === 'overview'
+                    ? 'text-primary border-b-2 border-primary'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Overview
+              </button>
+              <button
+                onClick={() => setActiveTab('schedule')}
+                className={`px-4 py-2 font-medium text-sm transition-colors ${
+                  activeTab === 'schedule'
+                    ? 'text-primary border-b-2 border-primary'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Schedule
+              </button>
+              <button
+                onClick={() => setActiveTab('students')}
+                className={`px-4 py-2 font-medium text-sm transition-colors ${
+                  activeTab === 'students'
+                    ? 'text-primary border-b-2 border-primary'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Students
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Tab Content */}
+        {group && activeTab === 'schedule' ? (
+          <ScheduleTab groupId={groupId} courseCode={group.course?.course_code || String(group.course_id)} />
+        ) : group && activeTab === 'students' ? (
+          <StudentsTab groupId={groupId} />
+        ) : group ? (
+          <>
+            {/* Invite Links Block */}
         <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl shadow-lg p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
@@ -577,6 +625,8 @@ export function GroupDetailView({ groupId }: GroupDetailViewProps) {
             </div>
           </dl>
         </div>
+          </>
+        )}
       </div>
     </div>
   );
