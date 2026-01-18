@@ -199,9 +199,7 @@ export interface Schedule {
   is_active: boolean;
   created_at: string;
   updated_at: string;
-}
-
-export interface Run {
+}export interface Run {
   run_id: number;
   group_id: number; // Changed from deployment_id
   account_id: number;

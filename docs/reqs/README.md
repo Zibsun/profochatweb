@@ -12,6 +12,7 @@
 - [Вкладка Schedule в Groups](groups_schedule_tab.md) — требования к управлению расписанием секций курса
 - [Вкладка Students в Groups](groups_students_tab.md) — требования к управлению участниками группы курса
 - [Связь участников курсов с invite links и группами](course_participants_invite_link_relation.md) — требования к добавлению связей между courseparticipants, invite_link и course_group
+- [Multitenancy с авторизацией через Telegram](multitenancy_telegram_auth.md) — требования к реализации multitenancy и авторизации через Telegram для веб-приложения
 
 ## Назначение
 

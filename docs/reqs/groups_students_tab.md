@@ -2,7 +2,7 @@
 
 **Версия:** 1.0  
 **Дата:** 2024  
-**Статус:** Требования к реализации  
+**Статус:** Реализовано  
 **Основано на:** `groups_model.md`, `course_participants_invite_link_relation.md`, `frontend_page_guidelines.md`
 
 ---
@@ -716,25 +716,26 @@ interface StudentsTabState {
 
 ## Чеклист реализации
 
-- [ ] API endpoint для получения участников группы (`GET /api/groups/[groupId]/participants`)
-- [ ] API endpoint для добавления участника (`POST /api/groups/[groupId]/participants`)
-- [ ] API endpoint для обновления участника (`PATCH /api/groups/[groupId]/participants/[participantId]`)
-- [ ] API endpoint для удаления участника (`DELETE /api/groups/[groupId]/participants/[participantId]`)
-- [ ] API endpoint для переноса участника (`POST /api/groups/[groupId]/participants/[participantId]/transfer`)
-- [ ] Компонент StudentsTab
-- [ ] Компонент ParticipantsTable
-- [ ] Компонент ParticipantRow
-- [ ] Компонент AddParticipantModal
-- [ ] Компонент EditParticipantModal
-- [ ] Компонент TransferParticipantModal
-- [ ] Поиск по username и chat_id
-- [ ] Фильтрация по invite link
-- [ ] Сортировка по колонкам
-- [ ] Пагинация (если нужно)
-- [ ] Обработка ошибок
-- [ ] Toast уведомления (на английском)
-- [ ] Адаптивная верстка
-- [ ] Интеграция в GroupDetailsPanel и GroupDetailView
+- [x] API endpoint для получения участников группы (`GET /api/groups/[groupId]/participants`)
+- [x] API endpoint для добавления участника (`POST /api/groups/[groupId]/participants`)
+- [x] API endpoint для обновления участника (`PATCH /api/groups/[groupId]/participants/[participantId]`)
+- [x] API endpoint для удаления участника (`DELETE /api/groups/[groupId]/participants/[participantId]`)
+- [x] API endpoint для переноса участника (`POST /api/groups/[groupId]/participants/[participantId]/transfer`)
+- [x] Компонент StudentsTab
+- [x] Компонент ParticipantsTable
+- [x] Компонент ParticipantRow
+- [x] Компонент AddParticipantModal
+- [x] Компонент EditParticipantModal
+- [x] Компонент TransferParticipantModal
+- [x] Поиск по username и chat_id
+- [x] Фильтрация по invite link (включая "Manual")
+- [x] Сортировка по колонкам (по дате добавления)
+- [x] Пагинация (поддержка через query параметры)
+- [x] Обработка ошибок
+- [x] Toast уведомления (на английском)
+- [x] Адаптивная верстка
+- [x] Интеграция в GroupDetailsPanel и GroupDetailView
+- [x] Копирование course_code из таблицы course при создании участника
 - [ ] Тесты компонентов
 - [ ] Тесты API endpoints
 
@@ -755,7 +756,9 @@ interface StudentsTabState {
 
 - Используется таблица `courseparticipants` с полями `invite_link_id` и `course_group_id`
 - При добавлении участника автоматически определяется `course_id` из группы
-- При переносе участника обновляются `course_group_id` и `course_id`
+- При добавлении участника автоматически копируется `course_code` из таблицы `course`
+- Если `course_code` равен `null` в таблице `course`, используется пустая строка `''`
+- При переносе участника обновляются `course_group_id`, `course_id` и `course_code`
 
 ### API параметры
 
@@ -785,11 +788,17 @@ interface StudentsTabState {
 ---
 
 **Дата создания:** 2024  
-**Статус:** Требования к реализации  
+**Дата реализации:** 2024  
+**Статус:** Реализовано  
+**Реализовано:**
+- ✅ API endpoints для управления участниками группы
+- ✅ Компоненты фронтенда (StudentsTab, ParticipantsTable, модальные окна)
+- ✅ Интеграция в GroupDetailsPanel и GroupDetailView
+- ✅ Копирование course_code из таблицы course при создании участника
+- ✅ Поддержка фильтрации, поиска и переноса участников
+
 **Следующие шаги:**
-1. Обсуждение требований с командой
-2. Создание API endpoints
-3. Реализация компонентов фронтенда
-4. Тестирование всех сценариев использования
-5. Добавление unit тестов для компонентов
-6. Добавление интеграционных тестов для API endpoints
+1. Тестирование всех сценариев использования
+2. Добавление unit тестов для компонентов
+3. Добавление интеграционных тестов для API endpoints
+4. Оптимизация производительности при большом количестве участников

@@ -377,7 +377,7 @@ CREATE TABLE public.waiting_element (
 ```sql
 CREATE TABLE public.courseparticipants (
     courseparticipant_id int4 DEFAULT nextval('courseparticipant_id_seq') PRIMARY KEY,
-    course_code text NOT NULL,  -- legacy
+    course_code text NOT NULL,  -- legacy, копируется из course.course_code при создании
     username text NOT NULL,
     account_id int4 DEFAULT 1 NOT NULL REFERENCES account(account_id) ON DELETE CASCADE,
     chat_id int8,

@@ -8,6 +8,8 @@
 - просмотр и редактирование деталей выбранной группы;
 - управление активностью группы;
 - управление invite‑ссылками (создание, копирование, деактивация);
+- управление участниками группы (вкладка Students);
+- управление расписанием секций курса (вкладка Schedule);
 - создание новой группы через `/groups/new`.
 
 ## URL и навигация
@@ -29,6 +31,8 @@
 - `public.bot`
 - `public.course`
 - `public.invite_link`
+- `public.courseparticipants` (для вкладки Students)
+- `public.schedule` (для вкладки Schedule)
 
 Фильтр по аккаунту: `account_id = 1` (жёстко через `getAccountId`).
 
@@ -97,7 +101,45 @@ https://t.me/<bot_name>?start=grp_<course_group_id>_<token>
 Кнопка **Deactivate** вызывает:
 - `PATCH /api/invites/{id}` с `{ is_active: false }`
 
-### 6) Создание новой группы
+### 6) Вкладка Schedule
+Вкладка **Schedule** позволяет управлять расписанием запуска секций курса для группы:
+- Загружает секции курса из YAML через `GET /api/courses/{courseCode}/sections`
+- Загружает расписание группы через `GET /api/groups/{id}/schedule`
+- Позволяет устанавливать дату и время начала каждой секции
+- Сохраняет расписание через `POST /api/groups/{id}/schedule`
+- Подробнее: см. [groups_schedule_tab.md](../../../reqs/groups_schedule_tab.md)
+
+### 7) Вкладка Students
+Вкладка **Students** позволяет управлять участниками группы:
+- Просмотр списка участников группы
+- Поиск по username или chat_id
+- Фильтрация по invite link
+- Добавление участников вручную
+- Редактирование данных участника
+- Удаление участников из группы
+- Перенос участников между группами
+- Подробнее: см. [groups_students_tab.md](../../../reqs/groups_students_tab.md)
+
+#### Загрузка участников
+- `GET /api/groups/{id}/participants` — список участников с фильтрацией и поиском
+- Query параметры: `search`, `invite_link_id`, `page`, `limit`
+
+#### Добавление участника
+- `POST /api/groups/{id}/participants` с телом `{ chat_id?, username?, invite_link_id? }`
+- Автоматически копирует `course_code` из таблицы `course`
+- Если `course_code` равен `null`, используется пустая строка `''`
+
+#### Редактирование участника
+- `PATCH /api/groups/{id}/participants/{participantId}` с телом `{ chat_id?, username?, invite_link_id? }`
+
+#### Удаление участника
+- `DELETE /api/groups/{id}/participants/{participantId}`
+
+#### Перенос участника
+- `POST /api/groups/{id}/participants/{participantId}/transfer` с телом `{ target_group_id, invite_link_id? }`
+- Автоматически обновляет `course_id` и `course_code` из целевой группы
+
+### 8) Создание новой группы
 `GET /groups/new` — форма создания группы:
 - поля `name`, `description`, `bot`, `course`, `is_active`
 - список ботов и курсов берётся из `GET /api/bots` и `GET /api/courses`
@@ -112,6 +154,14 @@ https://t.me/<bot_name>?start=grp_<course_group_id>_<token>
 - `GET /api/groups/{id}/invites` — список invite‑ссылок
 - `POST /api/groups/{id}/invites` — создание invite‑ссылки
 - `PATCH /api/invites/{id}` — деактивация invite
+- `GET /api/groups/{id}/schedule` — получение расписания группы
+- `POST /api/groups/{id}/schedule` — создание/обновление расписания
+- `GET /api/courses/{courseCode}/sections` — получение секций курса
+- `GET /api/groups/{id}/participants` — список участников группы
+- `POST /api/groups/{id}/participants` — добавление участника
+- `PATCH /api/groups/{id}/participants/{participantId}` — обновление участника
+- `DELETE /api/groups/{id}/participants/{participantId}` — удаление участника
+- `POST /api/groups/{id}/participants/{participantId}/transfer` — перенос участника в другую группу
 - `GET /api/bots` — список ботов (для формы создания/редактирования)
 - `GET /api/courses` — список курсов (для формы создания/редактирования)
 
@@ -120,9 +170,21 @@ https://t.me/<bot_name>?start=grp_<course_group_id>_<token>
 - `webapp/frontend/components/groups/GroupsManagement.tsx`
 - `webapp/frontend/components/groups/GroupsSidebar.tsx`
 - `webapp/frontend/components/groups/GroupDetailsPanel.tsx`
+- `webapp/frontend/components/groups/GroupDetailView.tsx`
 - `webapp/frontend/components/groups/AddInviteLinkModal.tsx`
+- `webapp/frontend/components/groups/ScheduleTab.tsx` — вкладка Schedule
+- `webapp/frontend/components/groups/StudentsTab.tsx` — вкладка Students
+- `webapp/frontend/components/groups/ParticipantsTable.tsx` — таблица участников
+- `webapp/frontend/components/groups/AddParticipantModal.tsx` — модальное окно добавления
+- `webapp/frontend/components/groups/EditParticipantModal.tsx` — модальное окно редактирования
+- `webapp/frontend/components/groups/TransferParticipantModal.tsx` — модальное окно переноса
 - `webapp/frontend/app/groups/new/page.tsx`
 - `webapp/frontend/app/api/groups/route.ts`
 - `webapp/frontend/app/api/groups/[groupId]/route.ts`
 - `webapp/frontend/app/api/groups/[groupId]/invites/route.ts`
+- `webapp/frontend/app/api/groups/[groupId]/schedule/route.ts`
+- `webapp/frontend/app/api/groups/[groupId]/participants/route.ts`
+- `webapp/frontend/app/api/groups/[groupId]/participants/[participantId]/route.ts`
+- `webapp/frontend/app/api/groups/[groupId]/participants/[participantId]/transfer/route.ts`
+- `webapp/frontend/app/api/courses/[courseCode]/sections/route.ts`
 - `webapp/frontend/app/api/invites/[inviteId]/route.ts`
