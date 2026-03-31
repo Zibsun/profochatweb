@@ -63,12 +63,12 @@ export async function GET(
     }
 
     // 2. Курс не найден в БД, пробуем загрузить из YAML (legacy режим)
-    const courseMetadata = getCourseMetadata(courseId);
+    const courseMetadata = getCourseMetadata(courseCode);
     if (!courseMetadata) {
       return NextResponse.json(
         {
           error: 'Course not found',
-          message: `Course with ID "${courseId}" not found in database or courses.yml`,
+          message: `Course with ID "${courseCode}" not found in database or courses.yml`,
         },
         { status: 404 }
       );
@@ -82,8 +82,8 @@ export async function GET(
       const extCoursesInfo = isFromExtCourses ? getExtCoursesInfo(courses) : null;
       
       const message = isFromExtCourses && extCoursesInfo?.path === 'db'
-        ? `Course "${courseId}" is loaded from database via ext_courses (old schema). Please migrate it to the new database schema first.`
-        : `Course "${courseId}" is stored in database (old schema). Please migrate it to the new database schema first.`;
+        ? `Course "${courseCode}" is loaded from database via ext_courses (old schema). Please migrate it to the new database schema first.`
+        : `Course "${courseCode}" is stored in database (old schema). Please migrate it to the new database schema first.`;
       
       return NextResponse.json(
         {
@@ -96,12 +96,12 @@ export async function GET(
     }
 
     // Получаем путь к файлу курса
-    const courseFilePath = getCourseFilePath(courseId);
+    const courseFilePath = getCourseFilePath(courseCode);
     if (!courseFilePath) {
       return NextResponse.json(
         {
           error: 'Course file path not found',
-          message: `Could not determine file path for course "${courseId}"`,
+          message: `Could not determine file path for course "${courseCode}"`,
         },
         { status: 404 }
       );
@@ -175,7 +175,7 @@ export async function PUT(
       const { saveCourseToDB } = await import('@/lib/course-editor/db-utils');
       
       await saveCourseToDB(
-        courseCode,  // Используем courseCode вместо courseId
+        courseCode,  // Используем courseCode вместо courseCode
         accountId,
         yamlContent,
         {
@@ -205,7 +205,7 @@ export async function PUT(
       return NextResponse.json(
         {
           error: 'Course not found',
-          message: `Course with ID "${courseId}" not found in courses.yml`,
+          message: `Course with ID "${courseCode}" not found in courses.yml`,
         },
         { status: 404 }
       );
@@ -219,8 +219,8 @@ export async function PUT(
       const extCoursesInfo = isFromExtCourses ? getExtCoursesInfo(courses) : null;
       
       const message = isFromExtCourses && extCoursesInfo?.path === 'db'
-        ? `Course "${courseId}" is loaded from database via ext_courses (old schema). Please migrate it to the new database schema first.`
-        : `Course "${courseId}" is stored in database (old schema). Please migrate it to the new database schema first.`;
+        ? `Course "${courseCode}" is loaded from database via ext_courses (old schema). Please migrate it to the new database schema first.`
+        : `Course "${courseCode}" is stored in database (old schema). Please migrate it to the new database schema first.`;
       
       return NextResponse.json(
         {
@@ -233,12 +233,12 @@ export async function PUT(
     }
 
     // Получаем путь к файлу курса
-    const courseFilePath = getCourseFilePath(courseId);
+    const courseFilePath = getCourseFilePath(courseCode);
     if (!courseFilePath) {
       return NextResponse.json(
         {
           error: 'Course file path not found',
-          message: `Could not determine file path for course "${courseId}"`,
+          message: `Could not determine file path for course "${courseCode}"`,
         },
         { status: 404 }
       );
@@ -252,7 +252,7 @@ export async function PUT(
 
     // Обновляем метаданные в courses.yml, если они изменились
     if (body.settings) {
-      updateCourseMetadata(courseId, {
+      updateCourseMetadata(courseCode, {
         element: body.settings.element,
         restricted: body.settings.restricted,
         decline_text: body.settings.decline_text,
@@ -262,7 +262,7 @@ export async function PUT(
     }
 
     return NextResponse.json({
-      course_id: courseId,
+      course_id: courseCode,
       path: courseMetadata.path,
       saved_at: new Date().toISOString(),
       message: 'Draft saved successfully',
@@ -289,11 +289,11 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const courseId = params.id;
+    const courseCode = params.id;
     const accountId = getAccountId(request);
 
     // Проверяем, существует ли курс в БД
-    const dbCourse = await getCourseFromDB(courseId, accountId);
+    const dbCourse = await getCourseFromDB(courseCode, accountId);
 
     if (dbCourse) {
       // Удаляем из БД
@@ -303,30 +303,30 @@ export async function DELETE(
       await query(
         `DELETE FROM course_element
          WHERE course_id = $1 AND account_id = $2`,
-        [courseId, accountId]
+        [courseCode, accountId]
       );
 
       // Удаляем метаданные курса
       await query(
         `DELETE FROM course
          WHERE course_id = $1 AND account_id = $2`,
-        [courseId, accountId]
+        [courseCode, accountId]
       );
 
       return NextResponse.json({
-        course_id: courseId,
+        course_id: courseCode,
         message: 'Course deleted successfully from database',
         source: 'database',
       });
     }
 
     // Удаляем из YAML (legacy режим)
-    const courseMetadata = getCourseMetadata(courseId);
+    const courseMetadata = getCourseMetadata(courseCode);
     if (!courseMetadata) {
       return NextResponse.json(
         {
           error: 'Course not found',
-          message: `Course with ID "${courseId}" not found in database or courses.yml`,
+          message: `Course with ID "${courseCode}" not found in database or courses.yml`,
         },
         { status: 404 }
       );
@@ -346,11 +346,11 @@ export async function DELETE(
         ? 'Course is loaded from database via ext_courses (old schema). Removing it from courses.yml will not delete it from the database.'
         : 'Course is stored in database (old schema). Removing it from courses.yml will not delete it from the database.';
       
-      console.warn(`Warning for course ${courseId}: ${warning}`);
+      console.warn(`Warning for course ${courseCode}: ${warning}`);
     }
 
     // Получаем путь к файлу курса
-    const courseFilePath = getCourseFilePath(courseId);
+    const courseFilePath = getCourseFilePath(courseCode);
     
     // Удаляем файл курса, если он существует и не является курсом из БД
     if (courseFilePath && !isFromDb) {
@@ -358,7 +358,7 @@ export async function DELETE(
       if (fs.existsSync(courseFilePath)) {
         // Проверяем, не используется ли файл другими курсами
         const otherCoursesUsingFile = Object.entries(courses)
-          .filter(([id, info]) => id !== courseId && id !== 'ext_courses')
+          .filter(([id, info]) => id !== courseCode && id !== 'ext_courses')
           .some(([_, info]) => {
             const otherPath = getCourseFilePath(_);
             return otherPath === courseFilePath;
@@ -371,11 +371,11 @@ export async function DELETE(
     }
 
     // Удаляем запись из courses.yml
-    delete courses[courseId];
+    delete courses[courseCode];
     saveCoursesYaml(courses);
 
     return NextResponse.json({
-      course_id: courseId,
+      course_id: courseCode,
       message: 'Course deleted successfully',
       warning: isFromDb ? (isFromExtCoursesDb
         ? 'Course remains in database (old schema). It can be added back via ext_courses.'

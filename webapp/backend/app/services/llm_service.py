@@ -37,7 +37,10 @@ except Exception as e:
     try:
         from openai import OpenAI
         from app.config import settings
-        fallback_client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        fallback_client = OpenAI(
+            api_key=settings.OPENAI_API_KEY,
+            base_url=getattr(settings, 'OPENAI_BASE_URL', None) or "https://api.openai.com/v1"
+        )
     except Exception as fallback_error:
         logger.error(f"Failed to initialize fallback OpenAI client: {fallback_error}")
         fallback_client = None

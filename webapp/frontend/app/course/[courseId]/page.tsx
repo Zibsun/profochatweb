@@ -132,7 +132,16 @@ type CourseElement = MessageElement | QuizElement | AudioElement | InputElement 
 export default function CoursePage() {
   const params = useParams()
   const courseId = params.courseId as string
-  const [messages, setMessages] = useState<CourseElement[]>([])
+  const storageKey = `course_messages_${courseId}`
+  const [messages, setMessages] = useState<CourseElement[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(storageKey)
+        return saved ? JSON.parse(saved) : []
+      } catch { return [] }
+    }
+    return []
+  })
   const [currentElement, setCurrentElement] = useState<CourseElement | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -148,6 +157,15 @@ export default function CoursePage() {
   const [revisionResults, setRevisionResults] = useState<Record<string, RevisionResult>>({})
   const [revisionLoading, setRevisionLoading] = useState<Record<string, boolean>>({})
   const [revisionCounter, setRevisionCounter] = useState<Record<string, number>>({}) // Счетчик для принудительного пересоздания компонентов
+
+  // Сохраняем messages в localStorage при изменении
+  useEffect(() => {
+    if (messages.length > 0) {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(messages))
+      } catch {}
+    }
+  }, [messages, storageKey])
 
   useEffect(() => {
     loadCourse()
@@ -296,9 +314,19 @@ export default function CoursePage() {
         console.log("Current element options:", currentElement.options)
       }
       setCurrentElement(currentElement)
-      // Добавляем первый элемент в чат
+      // Восстанавливаем или инициализируем историю
       if (currentElement) {
-        setMessages([currentElement])
+        setMessages(prev => {
+          if (prev.length > 0) {
+            // Есть сохранённая история — добавляем текущий элемент если его нет
+            const lastId = prev[prev.length - 1]?.element_id
+            if (lastId !== currentElement.element_id) {
+              return [...prev, currentElement]
+            }
+            return prev
+          }
+          return [currentElement]
+        })
       }
     } catch (err) {
       console.error('Ошибка загрузки курса:', err)
@@ -798,11 +826,50 @@ export default function CoursePage() {
     )
   }
 
+  const handleRestart = async () => {
+    if (!confirm('Начать курс с начала? Весь прогресс будет сброшен.')) return
+    // Очищаем localStorage
+    localStorage.removeItem(storageKey)
+    // Удаляем cookie chat_id чтобы создать новую сессию
+    document.cookie = 'chat_id=; max-age=0; path=/'
+    // Сбрасываем состояние
+    setMessages([])
+    setCurrentElement(null)
+    setIsCompleted(false)
+    setQuizStates({})
+    setInputStates({})
+    setQuestionStates({})
+    setMultiChoiceStates({})
+    setTestResults({})
+    setRevisionResults({})
+    setRevisionCounter({})
+    setError(null)
+    // Перезагружаем курс
+    await loadCourse()
+  }
+
   return (
-    <div className="h-screen bg-gray-100 flex flex-col">
+    <div className="h-screen bg-gray-50 flex flex-col items-center">
+      {/* Контейнер фиксированной ширины */}
+      <div className="w-full max-w-lg flex flex-col h-full bg-gray-100">
+      {/* Шапка */}
+      <div className="bg-white border-b border-gray-200 px-4 py-2.5 flex items-center justify-between shrink-0">
+        <div className="text-xs text-gray-400">
+          <span>Обучение</span>
+          <span className="mx-1.5">&gt;</span>
+          <span className="text-gray-500">Тренажёр по основам ИИ</span>
+        </div>
+        <button
+          onClick={handleRestart}
+          className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 1 9 9"/><path d="M3 21v-6h6"/><path d="M3 12V6h6"/></svg>
+          Сначала
+        </button>
+      </div>
       {/* Область чата */}
       <div className="flex-1 overflow-hidden min-h-0">
-        <ChatView 
+        <ChatView
           messages={messages}
           courseId={courseId}
           onNext={handleNext}
@@ -1045,6 +1112,7 @@ export default function CoursePage() {
                   </div>
                 </div>
               )}
+    </div>
     </div>
   )
 }

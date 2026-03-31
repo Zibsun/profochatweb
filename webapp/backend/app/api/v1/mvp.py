@@ -38,7 +38,7 @@ from sqlalchemy import and_, desc
 router = APIRouter()
 
 # Получаем project_root для работы с файлами
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../..'))
+project_root = os.environ.get('PROJECT_ROOT', os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../..')))
 
 
 # Dependency для получения репозитория курсов

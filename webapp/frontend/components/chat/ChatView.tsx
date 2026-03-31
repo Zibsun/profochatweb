@@ -192,9 +192,10 @@ interface ChatViewProps {
   revisionCounter?: Record<string, number>
   onStartRevision?: (elementId: string) => void
   onNext?: () => void  // Callback для перехода к следующему элементу
+  onRestart?: () => void  // Callback для перезапуска курса
 }
 
-export default function ChatView({ messages, courseId, onInlineButtonClick, onQuizAnswer, quizStates = {}, onInputAnswer, inputStates = {}, onQuestionAnswer, questionStates = {}, onMultiChoiceAnswer, multiChoiceStates = {}, testResults = {}, testLoading = {}, revisionResults = {}, revisionLoading = {}, revisionCounter = {}, onStartRevision, onNext }: ChatViewProps) {
+export default function ChatView({ messages, courseId, onInlineButtonClick, onQuizAnswer, quizStates = {}, onInputAnswer, inputStates = {}, onQuestionAnswer, questionStates = {}, onMultiChoiceAnswer, multiChoiceStates = {}, testResults = {}, testLoading = {}, revisionResults = {}, revisionLoading = {}, revisionCounter = {}, onStartRevision, onNext, onRestart }: ChatViewProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Автоматический скролл вниз при новых сообщениях
@@ -648,6 +649,14 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
                   {end.text}
                 </ReactMarkdown>
               </div>
+            )}
+            {onRestart && (
+              <button
+                onClick={onRestart}
+                className="mt-4 px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 active:bg-green-800 text-sm font-medium transition-colors"
+              >
+                Пройти курс заново
+              </button>
             )}
           </div>
         </div>

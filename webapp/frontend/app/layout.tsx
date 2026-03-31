@@ -3,8 +3,8 @@ import { ConditionalLayout } from '@/components/layout/ConditionalLayout'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'ProfoChatBot Web',
-  description: 'Web version of the learning platform',
+  title: 'Кактус.Нота — тренажёры для сотрудников',
+  description: 'Гибридные асинхронные курсы: ИИ-адаптация к каждому сотруднику, но без отвлечений от темы, типичных для ИИ-ботов.',
 }
 
 export default function RootLayout({

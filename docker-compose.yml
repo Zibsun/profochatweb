@@ -1,0 +1,28 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "127.0.0.1:8300:8000"
+    environment:
+      - DATABASE_URL=postgresql://profochat:kG0fP5pD2s@host.docker.internal:5432/profochat
+      - SECRET_KEY=profochat-web-secret-key-x7k9m2p4
+      - OPENAI_API_KEY=sk-jRznxdaeTZockeeOJqNYFFZmZenBRNvn
+      - OPENAI_BASE_URL=https://api.proxyapi.ru/openai/v1
+      - FRONTEND_URL=https://profochat.scrumtrek.ru
+      - ENVIRONMENT=production
+      - PROJECT_ROOT=/app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        - NEXT_PUBLIC_API_URL=https://profochat.scrumtrek.ru
+    ports:
+      - "127.0.0.1:3300:3000"
+    restart: unless-stopped

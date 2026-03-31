@@ -1,0 +1,19 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Install dependencies
+COPY webapp/backend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt bcrypt
+
+# Copy backend code
+COPY webapp/backend/app/ ./app/
+# Copy course scripts (YAML files used by MVP)
+COPY scripts/ /app/scripts/
+
+# Copy config
+COPY config.yaml /app/config.yaml
+
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
