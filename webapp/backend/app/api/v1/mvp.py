@@ -1580,6 +1580,19 @@ def get_next_element_from_course(course_id: str, current_element_id: str) -> Opt
     return None
 
 
+@router.get("/courses/token/{token}", response_model=dict)
+def resolve_course_token(token: str):
+    """Резолв секретного токена в course_id"""
+    courses = load_courses_yml()
+    for course_id, course_info in courses.items():
+        if isinstance(course_info, dict) and course_info.get("token") == token:
+            return {"course_id": course_id, "token": token}
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Неверная ссылка на курс"
+    )
+
+
 @router.get("/courses/{course_id}", response_model=dict)
 def check_course_exists(course_id: str):
     """Проверка существования курса"""

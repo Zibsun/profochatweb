@@ -131,8 +131,9 @@ type CourseElement = MessageElement | QuizElement | AudioElement | InputElement 
 
 export default function CoursePage() {
   const params = useParams()
-  const courseId = params.courseId as string
-  const storageKey = `course_messages_${courseId}`
+  const courseToken = params.courseId as string // URL содержит токен, не course_id
+  const [courseId, setCourseId] = useState<string | null>(null)
+  const storageKey = `course_messages_${courseToken}`
   const [messages, setMessages] = useState<CourseElement[]>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -169,7 +170,7 @@ export default function CoursePage() {
 
   useEffect(() => {
     loadCourse()
-  }, [courseId])
+  }, [courseToken])
 
   // Сбрасываем состояние для элементов из цепочки Revision при их показе
   useEffect(() => {
@@ -245,14 +246,27 @@ export default function CoursePage() {
       setError(null)
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-      console.log("Loading course:", courseId, "API URL:", apiUrl);
 
-      console.log("Checking course existence...");
-      // Проверяем существование курса
-      const checkResponse = await fetch(`${apiUrl}/api/mvp/courses/${courseId}`, {
+      // Резолвим токен в course_id
+      const tokenResponse = await fetch(`${apiUrl}/api/mvp/courses/token/${courseToken}`, {
         credentials: 'include',
       })
-      console.log("Check response status:", checkResponse.status)
+      if (!tokenResponse.ok) {
+        if (tokenResponse.status === 404) {
+          setCourseExists(false)
+          setLoading(false)
+          return
+        }
+        throw new Error(`Ошибка: ${tokenResponse.status}`)
+      }
+      const tokenData = await tokenResponse.json()
+      const resolvedCourseId = tokenData.course_id
+      setCourseId(resolvedCourseId)
+
+      // Проверяем существование курса
+      const checkResponse = await fetch(`${apiUrl}/api/mvp/courses/${resolvedCourseId}`, {
+        credentials: 'include',
+      })
       if (!checkResponse.ok) {
         if (checkResponse.status === 404) {
           setCourseExists(false)
@@ -262,13 +276,10 @@ export default function CoursePage() {
         const errorText = await checkResponse.text()
         throw new Error(`Ошибка при проверке курса: ${checkResponse.status} - ${errorText}`)
       }
-      const checkData = await checkResponse.json()
-      console.log('Course exists:', checkData)
       setCourseExists(true)
 
       // Начинаем курс (создаем сессию, если её нет)
-      console.log("Starting course...");
-      const startResponse = await fetch(`${apiUrl}/api/mvp/courses/${courseId}/start`, {
+      const startResponse = await fetch(`${apiUrl}/api/mvp/courses/${resolvedCourseId}/start`, {
         method: "POST",
         credentials: "include",
       });
@@ -284,7 +295,7 @@ export default function CoursePage() {
       // Получаем текущий элемент
       console.log("Getting current element...")
       const currentResponse = await fetch(
-        `${apiUrl}/api/mvp/courses/${courseId}/current`,
+        `${apiUrl}/api/mvp/courses/${resolvedCourseId}/current`,
         {
           credentials: 'include',
         }

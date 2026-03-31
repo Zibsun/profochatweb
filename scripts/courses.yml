@@ -1,52 +1,76 @@
 default:
   path: scripts/default.yml
+  token: 7UDEbml8b5avZC_TWANdlGIJjPY18sg_
 test:
   path: scripts/test.yml
+  token: UUQFtjyv2yOSsNWMPMVy0lrBdjrrq4J7
 dev:
   path: scripts/dev.yaml
+  token: ZJrCbRZxnTMBrhIYhRxGn-maeJP-1ZSv
 teacher:
   path: scripts/teacher.yaml
+  token: rbXAgAiMZUeVNEH_NJfx8brrIwyH-dY9
 miniapp:
   path: scripts/miniapp.yml
+  token: gngkW6Bi9JHZRcSRdt4rnEfNXfZuSPDJ
 us:
   path: scripts/userstory.yml
   element: Course_intro_end
+  token: 8m8GFtsQ-3SV6Dwbv5kaNIWWQpJNBw_L
 trendytest:
   path: scripts/trendytest.yml
+  token: DMwHfR4zD5pbzyZcfetFs2Tb2WyQV4eK
 forming2:
   path: scripts/teacher.yaml
   restricted: "yes"
   decline_text: |
     Хочешь присоединиться к курсу? Регистрируйся! https://trendyenglish.ru/page53699999.html
+  token: 6alxGqZjqcho-d-RX2m5qTRi8hRy5DMb
 forming:
   path: scripts/teacher.yaml
+  token: GCgTPot8IHjNJ5RkA27RlvXdM-CmAyUM
 ielts:
   path: scripts/ielts.yaml
+  token: btMWMpRVI-lxtQRnGVbv_qQp3kHp98uA
 rev:
   path: scripts/rev.yaml
+  token: HZrOwqwgMmT3A2pGe1ZpA5nvGJDhiRZE
 ielts2:
   path: scripts/ielts2.yaml
+  token: 1Aw9ooaY_yJjJ4m-tzJv62YkVy2JhGuy
 testdb:
   path: db
+  token: LDL83CuXm20cGpoQ7iPTeoe6m6PVyqnI
 acc:
   path: scripts/acceptance.yaml
+  token: zM3jG5M8qBQ1DwkCmFk5UB-3YW79l2EI
 tst:
   path: db
+  token: jTiv0VdgxRWZu54uKhV_rIfnMwxmDgBS
 speaking:
   path: scripts/speaking.yaml
+  token: U9g7s9PuYYw5Y_ntP25t9YsR3p5rBSSE
 greek:
   path: scripts/greek_test.yml
+  token: 6wBr6faOAZtGl6BpTzj8wFNoI1tCmhz_
 writing:
   path: scripts/listening_image_matching_example.yaml
+  token: 5UQbskweAtLABr7t_L--LstYAlKabNpL
 testmessages:
   path: scripts/test_messages.yml
+  token: j_dik7MJfrdhswRvU19x2c4OTe66aTgv
 test_all_elements:
   path: scripts/test_all_elements.yml
+  token: ytp93myWPqIeM-Ugo02UQmwjGTssG2t7
 test_test_element:
   path: scripts/test_test_element.yml
+  token: P9TntxI8QQPYzBKhDhI3cIjv_ZjQXpDg
 ai_bee1_v12:
   path: scripts/ai_bee1_v12.yml
+  token: GkpIHg0G3k66EyzysAUgACRJGbKZ7qzj
 test_course_editor:
   path: scripts/test_course_editor.yml
+  token: k6qyhES5oIaMNHmaS3ewD8JmS15RZ2lX
 greek2:
   path: scripts/greek_test2.yml
+  token: ylgS1-sFYwGu3ML4Mpirp3yep96LnYQs
