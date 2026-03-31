@@ -33,21 +33,10 @@ class CourseRepository:
     
     # ========== Run (сессии прохождения курсов) ==========
     
-    def create_run(self, course_code: str, username: Optional[str], chat_id: int, 
+    def create_run(self, course_code: str, username: Optional[str], chat_id: int,
                    utm_source: Optional[str] = None, utm_campaign: Optional[str] = None,
                    account_id: int = 1) -> int:
         """Создание новой сессии прохождения курса по course_code"""
-        # Получаем course_id по course_code
-        course = self.db.query(CourseDB).filter(
-            and_(
-                CourseDB.course_code == course_code,
-                CourseDB.account_id == account_id
-            )
-        ).first()
-        
-        if not course:
-            raise ValueError(f"Course with code '{course_code}' not found")
-        
         run = Run(
             course_id=course_code,  # В таблице run course_id остается TEXT (course_code)
             username=username,

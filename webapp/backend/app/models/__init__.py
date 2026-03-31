@@ -1,3 +1,4 @@
+# Модель User (универсальная, поддерживает email/password и Telegram авторизацию)
 from app.models.user import User
 from app.models.course import Course
 from app.models.lesson import Lesson
@@ -15,9 +16,16 @@ from app.models.course_db import CourseDB
 from app.models.course_element_db import CourseElementDB
 from app.models.banned_participant import BannedParticipant
 from app.models.course_participant import CourseParticipant
+from app.models.course_deployment_db import CourseDeploymentDB
+
+# Модели для Telegram авторизации и мультитенантности
+# UserTelegram - алиас для User (обратная совместимость)
+from app.models.user_telegram import UserTelegram
+from app.models.account import Account
+from app.models.account_member import AccountMember
 
 __all__ = [
-    'User',
+    'User',  # Email/password авторизация
     'Course',
     'Lesson',
     'LessonStep',
@@ -33,5 +41,9 @@ __all__ = [
     'CourseElementDB',
     'BannedParticipant',
     'CourseParticipant',
+    # Telegram auth и мультитенантность
+    'UserTelegram',
+    'Account',
+    'AccountMember',
 ]
 

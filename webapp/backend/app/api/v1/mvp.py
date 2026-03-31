@@ -393,19 +393,23 @@ def get_current_element_from_conversation(chat_id: int, course_id: str, run_id: 
     """Получение текущего элемента из conversation"""
     from app.models.conversation import Conversation
     from sqlalchemy import func as sql_func
-    
+
     # Сначала проверяем наличие активной цепочки повторения
     # Ищем последнюю запись с revision данными
-    revision_conv = repo.db.query(Conversation).filter(
-        and_(
-            Conversation.chat_id == chat_id,
-            Conversation.course_id == course_id,
-            Conversation.run_id == run_id,
-            Conversation.role == 'bot',
-            Conversation.json.like('%"revision"%')
-        )
-    ).order_by(desc(Conversation.date_inserted)).first()
-    
+    try:
+        revision_conv = repo.db.query(Conversation).filter(
+            and_(
+                Conversation.chat_id == chat_id,
+                Conversation.course_id == course_id,
+                Conversation.run_id == run_id,
+                Conversation.role == 'bot',
+                Conversation.json.like('%"revision"%')
+            )
+        ).order_by(desc(Conversation.date_inserted)).first()
+    except Exception as e:
+        logger.error(f"get_current_element_from_conversation: revision query FAILED: {e}")
+        revision_conv = None
+
     if revision_conv:
         revision_result = (
             revision_conv.element_id,
@@ -502,202 +506,201 @@ def get_current_element_from_conversation(chat_id: int, course_id: str, run_id: 
                         logger.info(f"get_current_element_from_conversation: revision chain multi_choice element_id={first_element_id}")
                         return result
         
-        # Если нет активной цепочки повторения, ищем последний элемент с role='bot'
-        conv = repo.db.query(Conversation).filter(
-            and_(
-                Conversation.chat_id == chat_id,
-                Conversation.course_id == course_id,
-                Conversation.run_id == run_id,
-                Conversation.role == 'bot'
-            )
-        ).order_by(desc(Conversation.date_inserted)).first()
+    # Если нет активной цепочки повторения, ищем последний элемент с role='bot'
+    conv = repo.db.query(Conversation).filter(
+        and_(
+            Conversation.chat_id == chat_id,
+            Conversation.course_id == course_id,
+            Conversation.run_id == run_id,
+            Conversation.role == 'bot'
+        )
+    ).order_by(desc(Conversation.date_inserted)).first()
+    if conv:
+        element_id = conv.element_id
+        element_type = conv.element_type
+        json_data = conv.json
+        report = conv.report
+        element_data = json.loads(json_data) if json_data else {}
+
+        # Обработка audio элементов
+        if element_type == "audio":
+            element_info = element_data.get("element_data", {})
+            result = {
+                "element_id": element_id,
+                "type": "audio",
+                "text": element_info.get("text"),
+                "media": element_info.get("media", []),
+                "parse_mode": element_info.get("parse_mode", "MARKDOWN"),
+                "link_preview": element_info.get("link_preview"),
+            }
+            logger.info(f"get_current_element_from_conversation: audio element_id={element_id}")
+            return result
         
-        if conv:
-            element_id = conv.element_id
-            element_type = conv.element_type
-            json_data = conv.json
-            report = conv.report
-            element_data = json.loads(json_data) if json_data else {}
+        # Обработка quiz элементов
+        if element_type == "quiz":
+            element_info = element_data.get("element_data", {})
             
-            # Обработка audio элементов
-            if element_type == "audio":
-                element_info = element_data.get("element_data", {})
-                result = {
-                    "element_id": element_id,
-                    "type": "audio",
-                    "text": element_info.get("text"),
-                    "media": element_info.get("media", []),
-                    "parse_mode": element_info.get("parse_mode", "MARKDOWN"),
-                    "link_preview": element_info.get("link_preview"),
-                }
-                logger.info(f"get_current_element_from_conversation: audio element_id={element_id}")
-                return result
+            # Нормализуем answers: преобразуем correct из boolean в строку "yes"
+            # и text в строку (на случай если это число из YAML)
+            answers = element_info.get("answers", [])
+            normalized_answers = []
+            for answer in answers:
+                normalized_answer = answer.copy()
+                # Преобразуем text в строку, если это не строка
+                if "text" in normalized_answer and not isinstance(normalized_answer["text"], str):
+                    normalized_answer["text"] = str(normalized_answer["text"])
+                correct_value = answer.get("correct")
+                if correct_value is True or correct_value == "yes":
+                    normalized_answer["correct"] = "yes"
+                elif correct_value is False or correct_value == "no":
+                    # Удаляем поле correct для неправильных ответов
+                    normalized_answer.pop("correct", None)
+                normalized_answers.append(normalized_answer)
             
-            # Обработка quiz элементов
-            if element_type == "quiz":
-                element_info = element_data.get("element_data", {})
-                
-                # Нормализуем answers: преобразуем correct из boolean в строку "yes"
-                # и text в строку (на случай если это число из YAML)
-                answers = element_info.get("answers", [])
-                normalized_answers = []
-                for answer in answers:
-                    normalized_answer = answer.copy()
-                    # Преобразуем text в строку, если это не строка
-                    if "text" in normalized_answer and not isinstance(normalized_answer["text"], str):
-                        normalized_answer["text"] = str(normalized_answer["text"])
-                    correct_value = answer.get("correct")
-                    if correct_value is True or correct_value == "yes":
-                        normalized_answer["correct"] = "yes"
-                    elif correct_value is False or correct_value == "no":
-                        # Удаляем поле correct для неправильных ответов
-                        normalized_answer.pop("correct", None)
-                    normalized_answers.append(normalized_answer)
-                
-                result = {
-                    "element_id": element_id,
-                    "type": "quiz",
-                    "text": element_info.get("text", ""),
-                    "answers": normalized_answers,
-                    "media": element_info.get("media"),
-                }
-                logger.info(f"get_current_element_from_conversation: quiz element_id={element_id}")
-                return result
+            result = {
+                "element_id": element_id,
+                "type": "quiz",
+                "text": element_info.get("text", ""),
+                "answers": normalized_answers,
+                "media": element_info.get("media"),
+            }
+            logger.info(f"get_current_element_from_conversation: quiz element_id={element_id}")
+            return result
+        
+        # Обработка input элементов
+        if element_type == "input":
+            element_info = element_data.get("element_data", {})
+            result = {
+                "element_id": element_id,
+                "type": "input",
+                "text": element_info.get("text", ""),
+                "correct_answer": element_info.get("correct_answer"),
+                "feedback_correct": element_info.get("feedback_correct"),
+                "feedback_incorrect": element_info.get("feedback_incorrect"),
+                "input_type": element_info.get("input_type", "text"),
+            }
+            logger.info(f"get_current_element_from_conversation: input element_id={element_id}")
+            return result
+        
+        # Обработка question элементов
+        if element_type == "question":
+            element_info = element_data.get("element_data", {})
+            result = {
+                "element_id": element_id,
+                "type": "question",
+                "text": element_info.get("text", ""),
+                "answers": element_info.get("answers", []),
+            }
+            logger.info(f"get_current_element_from_conversation: question element_id={element_id}")
+            return result
+        
+        # Обработка multi_choice элементов
+        if element_type == "multi_choice":
+            element_info = element_data.get("element_data", {})
             
-            # Обработка input элементов
-            if element_type == "input":
-                element_info = element_data.get("element_data", {})
-                result = {
-                    "element_id": element_id,
-                    "type": "input",
-                    "text": element_info.get("text", ""),
-                    "correct_answer": element_info.get("correct_answer"),
-                    "feedback_correct": element_info.get("feedback_correct"),
-                    "feedback_incorrect": element_info.get("feedback_incorrect"),
-                    "input_type": element_info.get("input_type", "text"),
-                }
-                logger.info(f"get_current_element_from_conversation: input element_id={element_id}")
-                return result
+            # Нормализуем answers: преобразуем correct из boolean в строку "yes"/"no"
+            answers = element_info.get("answers", [])
+            normalized_answers = []
+            for answer in answers:
+                normalized_answer = answer.copy()
+                correct_value = answer.get("correct")
+                if correct_value is True or correct_value == "yes":
+                    normalized_answer["correct"] = "yes"
+                elif correct_value is False or correct_value == "no":
+                    normalized_answer["correct"] = "no"
+                normalized_answers.append(normalized_answer)
             
-            # Обработка question элементов
-            if element_type == "question":
-                element_info = element_data.get("element_data", {})
-                result = {
-                    "element_id": element_id,
-                    "type": "question",
-                    "text": element_info.get("text", ""),
-                    "answers": element_info.get("answers", []),
-                }
-                logger.info(f"get_current_element_from_conversation: question element_id={element_id}")
-                return result
-            
-            # Обработка multi_choice элементов
-            if element_type == "multi_choice":
-                element_info = element_data.get("element_data", {})
-                
-                # Нормализуем answers: преобразуем correct из boolean в строку "yes"/"no"
-                answers = element_info.get("answers", [])
-                normalized_answers = []
-                for answer in answers:
-                    normalized_answer = answer.copy()
-                    correct_value = answer.get("correct")
-                    if correct_value is True or correct_value == "yes":
-                        normalized_answer["correct"] = "yes"
-                    elif correct_value is False or correct_value == "no":
-                        normalized_answer["correct"] = "no"
-                    normalized_answers.append(normalized_answer)
-                
-                result = {
-                    "element_id": element_id,
-                    "type": "multi_choice",
-                    "text": element_info.get("text", ""),
-                    "answers": normalized_answers,
-                    "feedback_correct": element_info.get("feedback_correct", ""),
-                    "feedback_partial": element_info.get("feedback_partial", ""),
-                    "feedback_incorrect": element_info.get("feedback_incorrect", ""),
-                }
-                logger.info(f"get_current_element_from_conversation: multi_choice element_id={element_id}")
-                return result
-            
-            # Обработка test элементов
-            if element_type == "test":
-                element_info = element_data.get("element_data", {})
-                result = {
-                    "element_id": element_id,
-                    "type": "test",
-                    "text": element_info.get("text", ""),
-                    "prefix": element_info.get("prefix", ""),
-                    "score": element_info.get("score", {}),
-                    "button": element_info.get("button"),
-                }
-                logger.info(f"get_current_element_from_conversation: test element_id={element_id}")
-                return result
-            
-            # Обработка end элементов
-            if element_type == "end":
-                element_info = element_data.get("element_data", {})
-                result = {
-                    "element_id": element_id,
-                    "type": "end",
-                    "text": element_info.get("text"),
-                }
-                logger.info(f"get_current_element_from_conversation: end element_id={element_id}")
-                return result
-            
-            # Обработка revision элементов
-            if element_type == "revision":
-                element_info = element_data.get("element_data", {})
-                result = {
-                    "element_id": element_id,
-                    "type": "revision",
-                    "text": element_info.get("text", ""),
-                    "prefix": element_info.get("prefix", ""),
-                    "no_mistakes": element_info.get("no_mistakes", ""),
-                    "button": element_info.get("button"),
-                }
-                logger.info(f"get_current_element_from_conversation: revision element_id={element_id}")
-                return result
-            
-            # Обработка dialog элементов
-            if element_type == "dialog":
-                element_info = element_data.get("element_data", {})
-                text_value = element_info.get("text", "")
-                logger.info(f"get_current_element_from_conversation: dialog element_id={element_id}, text={text_value[:50] if text_value else 'EMPTY'}, element_info keys={list(element_info.keys())}")
-                result = {
-                    "element_id": element_id,
-                    "type": "dialog",
-                    "text": text_value,
-                    "prompt": element_info.get("prompt", ""),
-                    "model": element_info.get("model"),
-                    "temperature": element_info.get("temperature"),
-                    "reasoning": element_info.get("reasoning"),
-                    "parse_mode": element_info.get("parse_mode", "MARKDOWN"),
-                    "link_preview": element_info.get("link_preview"),
-                    "auto_start": element_info.get("auto_start", False),
-                    "voice_response": element_info.get("voice_response", False),
-                    "transcription_language": element_info.get("transcription_language"),
-                    "tts_voice": element_info.get("tts_voice"),
-                    "tts_model": element_info.get("tts_model"),
-                    "tts_speed": element_info.get("tts_speed", 1.0),
-                    "conversation": element_info.get("conversation", [])
-                }
-                logger.info(f"get_current_element_from_conversation: dialog result text={result['text'][:50] if result['text'] else 'EMPTY'}")
-                return result
-            
-            # Обработка message элементов
-            if element_type == "message":
-                element_info = element_data.get("element_data", {})
-                result = {
-                    "element_id": element_id,
-                    "text": element_info.get("text", ""),
-                    "button": element_info.get("button"),
-                    "options": element_info.get("options"),  # Поддержка inline кнопок
-                    "parse_mode": element_info.get("parse_mode", "MARKDOWN"),
-                    "media": element_info.get("media"),  # Поддержка медиа файлов
-                    "link_preview": element_info.get("link_preview")  # Поддержка link_preview
-                }
-                logger.info(f"get_current_element_from_conversation: element_id={element_id}, options={result.get('options')}, media={result.get('media')}, json_data keys={list(element_info.keys())}")
-                return result
+            result = {
+                "element_id": element_id,
+                "type": "multi_choice",
+                "text": element_info.get("text", ""),
+                "answers": normalized_answers,
+                "feedback_correct": element_info.get("feedback_correct", ""),
+                "feedback_partial": element_info.get("feedback_partial", ""),
+                "feedback_incorrect": element_info.get("feedback_incorrect", ""),
+            }
+            logger.info(f"get_current_element_from_conversation: multi_choice element_id={element_id}")
+            return result
+        
+        # Обработка test элементов
+        if element_type == "test":
+            element_info = element_data.get("element_data", {})
+            result = {
+                "element_id": element_id,
+                "type": "test",
+                "text": element_info.get("text", ""),
+                "prefix": element_info.get("prefix", ""),
+                "score": element_info.get("score", {}),
+                "button": element_info.get("button"),
+            }
+            logger.info(f"get_current_element_from_conversation: test element_id={element_id}")
+            return result
+        
+        # Обработка end элементов
+        if element_type == "end":
+            element_info = element_data.get("element_data", {})
+            result = {
+                "element_id": element_id,
+                "type": "end",
+                "text": element_info.get("text"),
+            }
+            logger.info(f"get_current_element_from_conversation: end element_id={element_id}")
+            return result
+        
+        # Обработка revision элементов
+        if element_type == "revision":
+            element_info = element_data.get("element_data", {})
+            result = {
+                "element_id": element_id,
+                "type": "revision",
+                "text": element_info.get("text", ""),
+                "prefix": element_info.get("prefix", ""),
+                "no_mistakes": element_info.get("no_mistakes", ""),
+                "button": element_info.get("button"),
+            }
+            logger.info(f"get_current_element_from_conversation: revision element_id={element_id}")
+            return result
+        
+        # Обработка dialog элементов
+        if element_type == "dialog":
+            element_info = element_data.get("element_data", {})
+            text_value = element_info.get("text", "")
+            logger.info(f"get_current_element_from_conversation: dialog element_id={element_id}, text={text_value[:50] if text_value else 'EMPTY'}, element_info keys={list(element_info.keys())}")
+            result = {
+                "element_id": element_id,
+                "type": "dialog",
+                "text": text_value,
+                "prompt": element_info.get("prompt", ""),
+                "model": element_info.get("model"),
+                "temperature": element_info.get("temperature"),
+                "reasoning": element_info.get("reasoning"),
+                "parse_mode": element_info.get("parse_mode", "MARKDOWN"),
+                "link_preview": element_info.get("link_preview"),
+                "auto_start": element_info.get("auto_start", False),
+                "voice_response": element_info.get("voice_response", False),
+                "transcription_language": element_info.get("transcription_language"),
+                "tts_voice": element_info.get("tts_voice"),
+                "tts_model": element_info.get("tts_model"),
+                "tts_speed": element_info.get("tts_speed", 1.0),
+                "conversation": element_info.get("conversation", [])
+            }
+            logger.info(f"get_current_element_from_conversation: dialog result text={result['text'][:50] if result['text'] else 'EMPTY'}")
+            return result
+        
+        # Обработка message элементов
+        if element_type == "message":
+            element_info = element_data.get("element_data", {})
+            result = {
+                "element_id": element_id,
+                "text": element_info.get("text", ""),
+                "button": element_info.get("button"),
+                "options": element_info.get("options"),  # Поддержка inline кнопок
+                "parse_mode": element_info.get("parse_mode", "MARKDOWN"),
+                "media": element_info.get("media"),  # Поддержка медиа файлов
+                "link_preview": element_info.get("link_preview")  # Поддержка link_preview
+            }
+            logger.info(f"get_current_element_from_conversation: element_id={element_id}, options={result.get('options')}, media={result.get('media')}, json_data keys={list(element_info.keys())}")
+            return result
     
     return None
 
@@ -2085,7 +2088,8 @@ def start_course(
 def next_element(
     course_id: str,
     chat_id: Optional[int] = Cookie(None),
-    response: Response = None
+    response: Response = None,
+    repo: CourseRepository = Depends(get_course_repository)
 ):
     """Переход к следующему элементу"""
     # Получаем или создаем chat_id
@@ -2098,7 +2102,7 @@ def next_element(
     if not run_id:
         # Создаем новую сессию
         run_id = repo.create_run(course_id, None, current_chat_id, None, None)
-    
+
     # Получаем текущий элемент из conversation
     current_element = get_current_element_from_conversation(current_chat_id, course_id, run_id, repo)
     if not current_element:
@@ -2342,6 +2346,8 @@ def next_element(
         next_element_data = get_next_element_from_course(course_id, current_element["element_id"])
     
     # Получаем следующий элемент (если не было активной цепочки или цепочка закончилась)
+    if not next_element_data:
+        next_element_data = get_next_element_from_course(course_id, current_element["element_id"])
     if not next_element_data:
         # Курс завершен
         repo.set_course_ended(current_chat_id, course_id)

@@ -810,8 +810,8 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
                   ul: ({node, ...props}) => <ul className="list-disc list-inside mb-2" {...props} />,
                   ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-2" {...props} />,
                   li: ({node, ...props}) => <li className="mb-1" {...props} />,
-                  code: ({node, ...props}) => <code className="bg-blue-600 px-1 py-0.5 rounded text-sm" {...props} />,
-                  pre: ({node, ...props}) => <pre className="bg-blue-600 p-2 rounded mb-2 overflow-x-auto text-sm" {...props} />,
+                  code: ({node, ...props}) => <code className="bg-blue-600 px-1 py-0.5 rounded text-sm break-all" {...props} />,
+                  pre: ({node, ...props}) => <pre className="bg-blue-600 p-2 rounded mb-2 whitespace-pre-wrap break-words text-sm" {...props} />,
                   a: ({node, ...props}) => (
                     <a 
                       {...props} 

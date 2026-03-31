@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.v1 import auth, courses, lessons, steps, chat, quiz, mvp
+from app.api.v1 import courses, lessons, steps, chat, quiz, mvp
+from app.api.v1 import auth
 from app.config import settings
 
 app = FastAPI(title="ProfoChatBot Web API")
@@ -8,19 +9,26 @@ app = FastAPI(title="ProfoChatBot Web API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "http://localhost:3002",
+        "http://127.0.0.1:3002",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
+        "https://unsplenetic-mustached-jordy.ngrok-free.dev",
+        "https://*.ngrok-free.dev",
+        "https://*.ngrok.io",
+        getattr(settings, 'FRONTEND_URL', 'http://localhost:3002')
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # MVP роутер (без аутентификации)
 app.include_router(mvp.router, prefix="/api/mvp", tags=["mvp"])
 
 # Существующие роутеры (с аутентификацией)
+# Email/password авторизация
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(courses.router, prefix="/api/v1/courses", tags=["courses"])
 app.include_router(lessons.router, prefix="/api/v1/lessons", tags=["lessons"])

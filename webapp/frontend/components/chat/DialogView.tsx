@@ -314,8 +314,8 @@ export default function DialogView({ element, courseId, onNext }: DialogViewProp
                             ul: ({node, ...props}) => <ul className="list-disc list-inside mb-2 text-gray-800 break-words" style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }} {...props} />,
                             ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-2 text-gray-800 break-words" style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }} {...props} />,
                             li: ({node, ...props}) => <li className="mb-1 text-gray-800 break-words" style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }} {...props} />,
-                            code: ({node, ...props}) => <code className="bg-gray-300 px-1 py-0.5 rounded text-xs text-gray-900" {...props} />,
-                            pre: ({node, ...props}) => <pre className="bg-gray-300 p-2 rounded mb-2 overflow-x-auto text-xs text-gray-900" {...props} />,
+                            code: ({node, ...props}) => <code className="bg-gray-300 px-1 py-0.5 rounded text-xs text-gray-900 break-all" {...props} />,
+                            pre: ({node, ...props}) => <pre className="bg-gray-300 p-2 rounded mb-2 whitespace-pre-wrap break-words text-xs text-gray-900" {...props} />,
                             a: ({node, ...props}) => (
                               <a 
                                 {...props} 
