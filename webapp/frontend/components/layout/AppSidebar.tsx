@@ -10,6 +10,7 @@ import {
   Mail,
   Menu,
   X,
+  User,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -36,6 +37,11 @@ const navItems: NavItem[] = [
     label: 'Groups',
     href: '/groups',
     icon: Users,
+  },
+  {
+    label: 'Profile',
+    href: '/profile',
+    icon: User,
   },
   {
     label: 'Invites',
@@ -74,6 +80,9 @@ export function AppSidebar({ isCollapsed, onToggle }: AppSidebarProps) {
     }
     if (href === '/groups') {
       return pathname?.startsWith('/groups') || false;
+    }
+    if (href === '/profile') {
+      return pathname?.startsWith('/profile') || false;
     }
     return pathname?.startsWith(href) || false;
   };

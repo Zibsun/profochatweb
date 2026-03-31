@@ -2,10 +2,17 @@
 export type StepType = 'message' | 'video' | 'pdf' | 'quiz_single_choice' | 'chat';
 
 export interface User {
-  user_id: string;
+  user_id: number;
   email: string;
   username: string;
   created_at: string;
+  // Optional fields for Telegram auth
+  telegram_user_id?: number;
+  telegram_username?: string;
+  first_name?: string;
+  last_name?: string;
+  photo_url?: string;
+  is_super_admin?: boolean;
 }
 
 export interface Course {

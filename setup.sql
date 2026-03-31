@@ -1,286 +1,580 @@
--- ============================================================================
--- Migration: 0006_courseparticipants_invite_link_relation
--- ============================================================================
--- Description: Adds invite_link_id and course_group_id to courseparticipants table
---              Links course participants to invite links and course groups
--- Author: System
--- Date: 2024-01-01
--- Related: docs/reqs/course_participants_invite_link_relation.md
--- Breaking: No (backward compatible - adds nullable columns)
--- ============================================================================
--- 
--- This migration performs:
--- Phase 1: Add new columns (invite_link_id, course_group_id) to courseparticipants
--- Phase 2: Populate course_group_id for existing records (where possible)
--- Phase 3: Add foreign key constraints
--- Phase 4: Create indexes
--- Phase 5: Validation
--- ============================================================================
+-- DROP SCHEMA public;
 
-BEGIN;
+CREATE SCHEMA public AUTHORIZATION askhaturazbaev;
 
--- ============================================================================
--- PHASE 1: Add new columns to courseparticipants table
--- ============================================================================
+COMMENT ON SCHEMA public IS 'standard public schema';
 
--- Add invite_link_id column
-DO $$
+-- DROP SEQUENCE public.account_account_id_seq;
+
+CREATE SEQUENCE public.account_account_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE public.account_member_account_member_id_seq;
+
+CREATE SEQUENCE public.account_member_account_member_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE public.bannedparticipant_id_seq;
+
+CREATE SEQUENCE public.bannedparticipant_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE public.bot_bot_id_seq;
+
+CREATE SEQUENCE public.bot_bot_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE public.conversation_conversation_id_seq;
+
+CREATE SEQUENCE public.conversation_conversation_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE public.course_course_id_seq;
+
+CREATE SEQUENCE public.course_course_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE public.course_deployment_deployment_id_seq;
+
+CREATE SEQUENCE public.course_deployment_deployment_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE public.course_element_id_seq;
+
+CREATE SEQUENCE public.course_element_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE public.course_group_group_id_seq;
+
+CREATE SEQUENCE public.course_group_group_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE public.courseparticipant_id_seq;
+
+CREATE SEQUENCE public.courseparticipant_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE public.enrollment_token_token_id_seq;
+
+CREATE SEQUENCE public.enrollment_token_token_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE public.invite_link_invite_link_id_seq;
+
+CREATE SEQUENCE public.invite_link_invite_link_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE public.run_run_id_seq1;
+
+CREATE SEQUENCE public.run_run_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE public.schedule_schedule_id_seq;
+
+CREATE SEQUENCE public.schedule_schedule_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE public.users_user_id_seq;
+
+CREATE SEQUENCE public.users_user_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE public.waiting_element_id_seq;
+
+CREATE SEQUENCE public.waiting_element_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;-- public.account definition
+
+-- Drop table
+
+-- DROP TABLE public.account;
+
+CREATE TABLE public.account (
+	account_id serial4 NOT NULL,
+	"name" text NOT NULL,
+	slug text NOT NULL,
+	plan text DEFAULT 'free'::text NULL,
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	is_active bool DEFAULT true NULL,
+	settings jsonb NULL,
+	CONSTRAINT account_pkey PRIMARY KEY (account_id),
+	CONSTRAINT account_slug_key UNIQUE (slug)
+);
+CREATE INDEX idx_account_active ON public.account USING btree (is_active);
+CREATE INDEX idx_account_slug ON public.account USING btree (slug);
+
+
+-- public.schema_migrations definition
+
+-- Drop table
+
+-- DROP TABLE public.schema_migrations;
+
+CREATE TABLE public.schema_migrations (
+	"version" varchar(255) NOT NULL,
+	description text NULL,
+	applied_at timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	applied_by text NULL,
+	execution_time_ms int4 NULL,
+	CONSTRAINT schema_migrations_pkey PRIMARY KEY (version)
+);
+CREATE INDEX idx_schema_migrations_applied_at ON public.schema_migrations USING btree (applied_at);
+
+
+-- public.users definition
+
+-- Drop table
+
+-- DROP TABLE public.users;
+
+CREATE TABLE public.users (
+	user_id serial4 NOT NULL,
+	telegram_user_id int8 NOT NULL, -- Telegram user ID for Telegram authentication. Required for Telegram users.
+	telegram_username text NULL,
+	first_name text NULL,
+	last_name text NULL,
+	language_code text NULL,
+	photo_url text NULL,
+	last_login_at timestamptz NULL,
+	is_super_admin bool DEFAULT false NOT NULL,
+	email text NULL, -- Email for email/password authentication. Must be unique if provided. Required together with password_hash for email/password users.
+	password_hash text NULL, -- Bcrypt hash of password for email/password authentication. Required together with email for email/password users.
+	created_at timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+	updated_at timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+	username text NULL, -- Username for email/password authentication. Optional but recommended for email/password users.
+	CONSTRAINT users_email_key UNIQUE (email),
+	CONSTRAINT users_email_password_check CHECK ((((email IS NULL) AND (password_hash IS NULL)) OR ((email IS NOT NULL) AND (password_hash IS NOT NULL)))),
+	CONSTRAINT users_pkey PRIMARY KEY (user_id),
+	CONSTRAINT users_telegram_user_id_key UNIQUE (telegram_user_id)
+);
+CREATE INDEX idx_users_email ON public.users USING btree (email) WHERE (email IS NOT NULL);
+CREATE INDEX idx_users_is_super_admin ON public.users USING btree (is_super_admin);
+CREATE INDEX idx_users_telegram_user_id ON public.users USING btree (telegram_user_id);
+
+-- Column comments
+
+COMMENT ON COLUMN public.users.telegram_user_id IS 'Telegram user ID for Telegram authentication. Required for Telegram users.';
+COMMENT ON COLUMN public.users.email IS 'Email for email/password authentication. Must be unique if provided. Required together with password_hash for email/password users.';
+COMMENT ON COLUMN public.users.password_hash IS 'Bcrypt hash of password for email/password authentication. Required together with email for email/password users.';
+COMMENT ON COLUMN public.users.username IS 'Username for email/password authentication. Optional but recommended for email/password users.';
+
+-- Table Triggers
+
+create trigger trigger_update_users_updated_at before
+update
+    on
+    public.users for each row execute function update_users_updated_at();
+
+
+-- public.account_member definition
+
+-- Drop table
+
+-- DROP TABLE public.account_member;
+
+CREATE TABLE public.account_member (
+	account_member_id serial4 NOT NULL,
+	account_id int4 NOT NULL,
+	telegram_user_id int8 NOT NULL,
+	telegram_username text NULL,
+	"role" text DEFAULT 'member'::text NULL,
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	last_login_at timestamp NULL,
+	is_active bool DEFAULT true NULL,
+	user_id int4 NULL,
+	CONSTRAINT account_member_account_id_user_id_key UNIQUE (account_id, user_id),
+	CONSTRAINT account_member_pkey PRIMARY KEY (account_member_id),
+	CONSTRAINT account_member_role_check CHECK ((role = ANY (ARRAY['owner'::text, 'admin'::text, 'teacher'::text, 'instructional_designer'::text, 'member'::text]))),
+	CONSTRAINT account_member_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.account(account_id) ON DELETE CASCADE,
+	CONSTRAINT account_member_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+);
+CREATE INDEX idx_account_member_account ON public.account_member USING btree (account_id);
+CREATE INDEX idx_account_member_active ON public.account_member USING btree (account_id, is_active);
+CREATE INDEX idx_account_member_telegram ON public.account_member USING btree (telegram_user_id);
+
+
+-- public.bot definition
+
+-- Drop table
+
+-- DROP TABLE public.bot;
+
+CREATE TABLE public.bot (
+	bot_id serial4 NOT NULL,
+	account_id int4 NOT NULL,
+	bot_name text NOT NULL,
+	bot_token text NOT NULL,
+	display_name text NULL,
+	description text NULL,
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	is_active bool DEFAULT true NULL,
+	settings jsonb NULL,
+	CONSTRAINT bot_account_id_bot_name_key UNIQUE (account_id, bot_name),
+	CONSTRAINT bot_bot_token_key UNIQUE (bot_token),
+	CONSTRAINT bot_pkey PRIMARY KEY (bot_id),
+	CONSTRAINT bot_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.account(account_id) ON DELETE CASCADE
+);
+CREATE INDEX idx_bot_account ON public.bot USING btree (account_id);
+CREATE INDEX idx_bot_active ON public.bot USING btree (account_id, is_active);
+CREATE INDEX idx_bot_name ON public.bot USING btree (bot_name);
+
+
+-- public.conversation definition
+
+-- Drop table
+
+-- DROP TABLE public.conversation;
+
+CREATE TABLE public.conversation (
+	conversation_id serial4 NOT NULL,
+	chat_id int8 NULL,
+	username text NULL,
+	course_code text NULL,
+	element_id text NULL,
+	element_type text NULL,
+	"role" text NULL,
+	json text NULL,
+	report text NULL,
+	score float4 NULL,
+	maxscore float4 NULL,
+	date_inserted timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	run_id int4 NULL,
+	account_id int4 DEFAULT 1 NOT NULL,
+	course_id int4 NULL,
+	CONSTRAINT conversation_pkey PRIMARY KEY (conversation_id),
+	CONSTRAINT conversation_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.account(account_id) ON DELETE CASCADE
+);
+CREATE INDEX idx_conversation_account ON public.conversation USING btree (account_id);
+CREATE INDEX idx_conversation_chat ON public.conversation USING btree (chat_id);
+CREATE INDEX idx_conversation_course ON public.conversation USING btree (course_id, account_id);
+CREATE INDEX idx_conversation_date ON public.conversation USING btree (date_inserted DESC);
+CREATE INDEX idx_conversation_element ON public.conversation USING btree (course_id, account_id, element_id);
+CREATE INDEX idx_conversation_role ON public.conversation USING btree (run_id, role);
+CREATE INDEX idx_conversation_run ON public.conversation USING btree (run_id);
+
+
+-- public.course definition
+
+-- Drop table
+
+-- DROP TABLE public.course;
+
+CREATE TABLE public.course (
+	course_code text NOT NULL,
+	bot_name text NOT NULL,
+	creator_id int8 NULL,
+	date_created timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	yaml text NULL,
+	account_id int4 DEFAULT 1 NOT NULL,
+	title text NULL,
+	description text NULL,
+	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	metadata jsonb NULL,
+	is_active bool DEFAULT true NULL,
+	course_id serial4 NOT NULL,
+	CONSTRAINT course_course_code_account_id_key UNIQUE (course_code, account_id),
+	CONSTRAINT course_pkey PRIMARY KEY (course_id),
+	CONSTRAINT course_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.account(account_id) ON DELETE CASCADE
+);
+CREATE INDEX idx_course_account ON public.course USING btree (account_id);
+CREATE INDEX idx_course_active ON public.course USING btree (account_id, is_active);
+CREATE INDEX idx_course_coursecode_botname ON public.course USING btree (course_code, bot_name);
+CREATE INDEX idx_course_created ON public.course USING btree (account_id, date_created DESC);
+
+
+-- public.course_element definition
+
+-- Drop table
+
+-- DROP TABLE public.course_element;
+
+CREATE TABLE public.course_element (
+	course_element_id int8 DEFAULT nextval('course_element_id_seq'::regclass) NOT NULL,
+	element_id text NULL,
+	json text NULL,
+	element_type text NULL,
+	course_code text NULL,
+	bot_name text NULL,
+	account_id int4 DEFAULT 1 NOT NULL,
+	course_id int4 NOT NULL,
+	CONSTRAINT course_element_pkey PRIMARY KEY (course_element_id),
+	CONSTRAINT course_element_course_fkey FOREIGN KEY (course_id) REFERENCES public.course(course_id) ON DELETE CASCADE
+);
+CREATE INDEX idx_course_element_course ON public.course_element USING btree (course_id, account_id);
+CREATE INDEX idx_course_element_order ON public.course_element USING btree (course_id, account_id, course_element_id);
+CREATE INDEX idx_course_element_type ON public.course_element USING btree (course_id, account_id, element_type);
+
+
+-- public.course_group definition
+
+-- Drop table
+
+-- DROP TABLE public.course_group;
+
+CREATE TABLE public.course_group (
+	course_group_id int4 DEFAULT nextval('course_group_group_id_seq'::regclass) NOT NULL,
+	account_id int4 NOT NULL,
+	bot_id int4 NOT NULL,
+	course_id int4 NOT NULL,
+	"name" text NOT NULL,
+	description text NULL,
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	is_active bool DEFAULT true NULL,
+	settings jsonb NULL,
+	CONSTRAINT course_group_bot_id_course_id_name_key UNIQUE (bot_id, course_id, name),
+	CONSTRAINT course_group_pkey PRIMARY KEY (course_group_id),
+	CONSTRAINT course_group_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.account(account_id) ON DELETE CASCADE,
+	CONSTRAINT course_group_bot_id_fkey FOREIGN KEY (bot_id) REFERENCES public.bot(bot_id) ON DELETE CASCADE,
+	CONSTRAINT course_group_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.course(course_id) ON DELETE CASCADE
+);
+CREATE INDEX idx_course_group_account ON public.course_group USING btree (account_id);
+CREATE INDEX idx_course_group_active ON public.course_group USING btree (bot_id, is_active);
+CREATE INDEX idx_course_group_bot ON public.course_group USING btree (bot_id);
+CREATE INDEX idx_course_group_course ON public.course_group USING btree (course_id);
+
+
+-- public.gen_settings definition
+
+-- Drop table
+
+-- DROP TABLE public.gen_settings;
+
+CREATE TABLE public.gen_settings (
+	id int4 NOT NULL,
+	bot_name text NOT NULL,
+	s_key text NOT NULL,
+	s_value text NULL,
+	account_id int4 NULL,
+	bot_id int4 NULL,
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	CONSTRAINT gen_settings_pkey PRIMARY KEY (id),
+	CONSTRAINT gen_settings_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.account(account_id) ON DELETE CASCADE,
+	CONSTRAINT gen_settings_bot_id_fkey FOREIGN KEY (bot_id) REFERENCES public.bot(bot_id) ON DELETE CASCADE
+);
+CREATE INDEX idx_gen_settings_account ON public.gen_settings USING btree (account_id);
+CREATE INDEX idx_gen_settings_bot ON public.gen_settings USING btree (bot_id);
+CREATE INDEX idx_gen_settings_key ON public.gen_settings USING btree (account_id, bot_id, s_key);
+
+
+-- public.invite_link definition
+
+-- Drop table
+
+-- DROP TABLE public.invite_link;
+
+CREATE TABLE public.invite_link (
+	invite_link_id serial4 NOT NULL,
+	course_group_id int4 NOT NULL,
+	"token" text NOT NULL,
+	max_uses int4 NULL,
+	current_uses int4 DEFAULT 0 NULL,
+	expires_at timestamp NULL,
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	created_by int8 NULL,
+	is_active bool DEFAULT true NULL,
+	metadata jsonb NULL,
+	CONSTRAINT invite_link_pkey PRIMARY KEY (invite_link_id),
+	CONSTRAINT invite_link_token_key UNIQUE (token),
+	CONSTRAINT invite_link_course_group_id_fkey FOREIGN KEY (course_group_id) REFERENCES public.course_group(course_group_id) ON DELETE CASCADE
+);
+CREATE INDEX idx_invite_link_active ON public.invite_link USING btree (course_group_id, is_active);
+CREATE INDEX idx_invite_link_course_group ON public.invite_link USING btree (course_group_id);
+CREATE INDEX idx_invite_link_expires ON public.invite_link USING btree (expires_at) WHERE (expires_at IS NOT NULL);
+CREATE INDEX idx_invite_link_token ON public.invite_link USING btree (token);
+
+
+-- public.schedule definition
+
+-- Drop table
+
+-- DROP TABLE public.schedule;
+
+CREATE TABLE public.schedule (
+	schedule_id serial4 NOT NULL,
+	course_group_id int4 NOT NULL,
+	schedule_type text NOT NULL,
+	schedule_config jsonb NOT NULL,
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	is_active bool DEFAULT true NULL,
+	CONSTRAINT schedule_course_group_id_key UNIQUE (course_group_id),
+	CONSTRAINT schedule_pkey PRIMARY KEY (schedule_id),
+	CONSTRAINT schedule_course_group_id_fkey FOREIGN KEY (course_group_id) REFERENCES public.course_group(course_group_id) ON DELETE CASCADE
+);
+CREATE INDEX idx_schedule_active ON public.schedule USING btree (course_group_id, is_active);
+CREATE INDEX idx_schedule_course_group ON public.schedule USING btree (course_group_id);
+
+
+-- public.waiting_element definition
+
+-- Drop table
+
+-- DROP TABLE public.waiting_element;
+
+CREATE TABLE public.waiting_element (
+	waiting_element_id int4 DEFAULT nextval('waiting_element_id_seq'::regclass) NOT NULL,
+	chat_id int8 NOT NULL,
+	waiting_till_date timestamp NULL,
+	is_waiting bool NULL,
+	element_id text NULL,
+	course_code text NULL,
+	botname text NULL,
+	account_id int4 DEFAULT 1 NOT NULL,
+	bot_id int4 NULL,
+	run_id int4 NULL,
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	course_id int4 NULL,
+	CONSTRAINT waiting_element_pkey PRIMARY KEY (waiting_element_id),
+	CONSTRAINT waiting_element_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.account(account_id) ON DELETE CASCADE,
+	CONSTRAINT waiting_element_bot_id_fkey FOREIGN KEY (bot_id) REFERENCES public.bot(bot_id) ON DELETE CASCADE
+);
+CREATE INDEX idx_waiting_account ON public.waiting_element USING btree (account_id);
+CREATE INDEX idx_waiting_active ON public.waiting_element USING btree (is_waiting, waiting_till_date) WHERE (is_waiting = true);
+CREATE INDEX idx_waiting_bot ON public.waiting_element USING btree (bot_id);
+CREATE INDEX idx_waiting_date ON public.waiting_element USING btree (waiting_till_date);
+CREATE INDEX idx_waiting_run ON public.waiting_element USING btree (run_id);
+
+
+-- public.bannedparticipants definition
+
+-- Drop table
+
+-- DROP TABLE public.bannedparticipants;
+
+CREATE TABLE public.bannedparticipants (
+	bannedparticipant_id int4 DEFAULT nextval('bannedparticipant_id_seq'::regclass) NOT NULL,
+	botname text NOT NULL,
+	chat_id int8 NOT NULL,
+	banned_at timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	ban_reason text NULL,
+	excluded int2 NULL,
+	account_id int4 DEFAULT 1 NOT NULL,
+	bot_id int4 NULL,
+	metadata jsonb NULL,
+	CONSTRAINT bannedparticipants_pkey PRIMARY KEY (bannedparticipant_id),
+	CONSTRAINT bannedparticipants_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.account(account_id) ON DELETE CASCADE,
+	CONSTRAINT bannedparticipants_bot_id_fkey FOREIGN KEY (bot_id) REFERENCES public.bot(bot_id) ON DELETE CASCADE
+);
+CREATE UNIQUE INDEX bannedparticipants_unique ON public.bannedparticipants USING btree (bot_id, chat_id, excluded);
+CREATE INDEX idx_banned_account ON public.bannedparticipants USING btree (account_id);
+CREATE INDEX idx_banned_active ON public.bannedparticipants USING btree (bot_id, excluded) WHERE (excluded = 0);
+CREATE INDEX idx_banned_bot ON public.bannedparticipants USING btree (bot_id);
+CREATE INDEX idx_banned_chat ON public.bannedparticipants USING btree (bot_id, chat_id, excluded);
+CREATE INDEX idx_bannedparticipants_3 ON public.bannedparticipants USING btree (botname, chat_id, excluded);
+
+
+-- public.courseparticipants definition
+
+-- Drop table
+
+-- DROP TABLE public.courseparticipants;
+
+CREATE TABLE public.courseparticipants (
+	courseparticipant_id int4 DEFAULT nextval('courseparticipant_id_seq'::regclass) NOT NULL,
+	course_code text NOT NULL,
+	username text NOT NULL,
+	account_id int4 DEFAULT 1 NOT NULL,
+	chat_id int8 NULL,
+	added_at timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	added_by int8 NULL,
+	course_id int4 NOT NULL,
+	invite_link_id int4 NULL,
+	course_group_id int4 NULL,
+	CONSTRAINT courseparticipants_pkey PRIMARY KEY (courseparticipant_id),
+	CONSTRAINT courseparticipants_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.account(account_id) ON DELETE CASCADE,
+	CONSTRAINT courseparticipants_course_fkey FOREIGN KEY (course_id) REFERENCES public.course(course_id) ON DELETE CASCADE,
+	CONSTRAINT courseparticipants_course_group_fkey FOREIGN KEY (course_group_id) REFERENCES public.course_group(course_group_id) ON DELETE CASCADE,
+	CONSTRAINT courseparticipants_invite_link_fkey FOREIGN KEY (invite_link_id) REFERENCES public.invite_link(invite_link_id) ON DELETE SET NULL
+);
+CREATE UNIQUE INDEX courseparticipants_unique ON public.courseparticipants USING btree (course_id, account_id, COALESCE(chat_id, (0)::bigint), COALESCE(username, ''::text));
+CREATE INDEX idx_courseparticipants_account ON public.courseparticipants USING btree (account_id);
+CREATE INDEX idx_courseparticipants_chat ON public.courseparticipants USING btree (chat_id);
+CREATE INDEX idx_courseparticipants_course ON public.courseparticipants USING btree (course_id, account_id);
+CREATE INDEX idx_courseparticipants_course_group ON public.courseparticipants USING btree (course_group_id) WHERE (course_group_id IS NOT NULL);
+CREATE INDEX idx_courseparticipants_coursecode ON public.courseparticipants USING btree (course_code, account_id);
+CREATE INDEX idx_courseparticipants_group_account ON public.courseparticipants USING btree (course_group_id, account_id) WHERE (course_group_id IS NOT NULL);
+CREATE INDEX idx_courseparticipants_invite_link ON public.courseparticipants USING btree (invite_link_id) WHERE (invite_link_id IS NOT NULL);
+CREATE INDEX idx_courseparticipants_username ON public.courseparticipants USING btree (username);
+
+
+
+-- DROP FUNCTION public.update_users_updated_at();
+
+CREATE OR REPLACE FUNCTION public.update_users_updated_at()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
 BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND table_name = 'courseparticipants' 
-        AND column_name = 'invite_link_id'
-    ) THEN
-        ALTER TABLE public.courseparticipants 
-            ADD COLUMN invite_link_id INT4 NULL;
-        
-        RAISE NOTICE 'Added column invite_link_id to courseparticipants';
-    ELSE
-        RAISE NOTICE 'Column invite_link_id already exists in courseparticipants';
-    END IF;
-END $$;
-
--- Add course_group_id column
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND table_name = 'courseparticipants' 
-        AND column_name = 'course_group_id'
-    ) THEN
-        ALTER TABLE public.courseparticipants 
-            ADD COLUMN course_group_id INT4 NULL;
-        
-        RAISE NOTICE 'Added column course_group_id to courseparticipants';
-    ELSE
-        RAISE NOTICE 'Column course_group_id already exists in courseparticipants';
-    END IF;
-END $$;
-
--- ============================================================================
--- PHASE 2: Populate course_group_id for existing records
--- ============================================================================
-
--- Update course_group_id for records where we can uniquely determine the group
--- This handles cases where there's exactly one group for a course+account combination
-DO $$
-DECLARE
-    updated_count INT;
-BEGIN
-    -- First, update records where there's exactly one matching group
-    UPDATE public.courseparticipants cp
-    SET course_group_id = (
-        SELECT cg.course_group_id
-        FROM public.course_group cg
-        WHERE cg.course_id = cp.course_id
-          AND cg.account_id = cp.account_id
-        GROUP BY cg.course_group_id
-        HAVING COUNT(*) = 1
-        LIMIT 1
-    )
-    WHERE cp.course_group_id IS NULL
-      AND EXISTS (
-          SELECT 1
-          FROM public.course_group cg
-          WHERE cg.course_id = cp.course_id
-            AND cg.account_id = cp.account_id
-          GROUP BY cg.course_id, cg.account_id
-          HAVING COUNT(DISTINCT cg.course_group_id) = 1
-      );
-    
-    GET DIAGNOSTICS updated_count = ROW_COUNT;
-    RAISE NOTICE 'Updated course_group_id for % existing courseparticipants records', updated_count;
-    
-    -- Log records that couldn't be updated (multiple groups exist)
-    SELECT COUNT(*) INTO updated_count
-    FROM public.courseparticipants cp
-    WHERE cp.course_group_id IS NULL
-      AND EXISTS (
-          SELECT 1
-          FROM public.course_group cg
-          WHERE cg.course_id = cp.course_id
-            AND cg.account_id = cp.account_id
-          GROUP BY cg.course_id, cg.account_id
-          HAVING COUNT(DISTINCT cg.course_group_id) > 1
-      );
-    
-    IF updated_count > 0 THEN
-        RAISE NOTICE 'Warning: % courseparticipants records have multiple matching groups and were not updated. Manual review required.', updated_count;
-    END IF;
-END $$;
-
--- ============================================================================
--- PHASE 3: Add foreign key constraints
--- ============================================================================
-
--- Add FK constraint for invite_link_id
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.table_constraints 
-        WHERE constraint_schema = 'public' 
-        AND table_name = 'courseparticipants' 
-        AND constraint_name = 'courseparticipants_invite_link_fkey'
-    ) THEN
-        ALTER TABLE public.courseparticipants
-            ADD CONSTRAINT courseparticipants_invite_link_fkey 
-            FOREIGN KEY (invite_link_id) 
-            REFERENCES public.invite_link(invite_link_id) 
-            ON DELETE SET NULL;
-        
-        RAISE NOTICE 'Added foreign key constraint courseparticipants_invite_link_fkey';
-    ELSE
-        RAISE NOTICE 'Foreign key constraint courseparticipants_invite_link_fkey already exists';
-    END IF;
-END $$;
-
--- Add FK constraint for course_group_id
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.table_constraints 
-        WHERE constraint_schema = 'public' 
-        AND table_name = 'courseparticipants' 
-        AND constraint_name = 'courseparticipants_course_group_fkey'
-    ) THEN
-        ALTER TABLE public.courseparticipants
-            ADD CONSTRAINT courseparticipants_course_group_fkey 
-            FOREIGN KEY (course_group_id) 
-            REFERENCES public.course_group(course_group_id) 
-            ON DELETE CASCADE;
-        
-        RAISE NOTICE 'Added foreign key constraint courseparticipants_course_group_fkey';
-    ELSE
-        RAISE NOTICE 'Foreign key constraint courseparticipants_course_group_fkey already exists';
-    END IF;
-END $$;
-
--- ============================================================================
--- PHASE 4: Create indexes
--- ============================================================================
-
--- Index for invite_link_id
-CREATE INDEX IF NOT EXISTS idx_courseparticipants_invite_link 
-    ON public.courseparticipants (invite_link_id)
-    WHERE invite_link_id IS NOT NULL;
-
--- Index for course_group_id
-CREATE INDEX IF NOT EXISTS idx_courseparticipants_course_group 
-    ON public.courseparticipants (course_group_id)
-    WHERE course_group_id IS NOT NULL;
-
--- Composite index for queries by group and account
-CREATE INDEX IF NOT EXISTS idx_courseparticipants_group_account 
-    ON public.courseparticipants (course_group_id, account_id)
-    WHERE course_group_id IS NOT NULL;
-
--- ============================================================================
--- PHASE 5: Validation
--- ============================================================================
-
-DO $$
-BEGIN
-    -- Check that invite_link_id column was added
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND table_name = 'courseparticipants' 
-        AND column_name = 'invite_link_id'
-    ) THEN
-        RAISE EXCEPTION 'Column invite_link_id was not added to courseparticipants table';
-    END IF;
-
-    -- Check that course_group_id column was added
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND table_name = 'courseparticipants' 
-        AND column_name = 'course_group_id'
-    ) THEN
-        RAISE EXCEPTION 'Column course_group_id was not added to courseparticipants table';
-    END IF;
-
-    -- Check that foreign key constraints were added
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.table_constraints 
-        WHERE constraint_schema = 'public' 
-        AND table_name = 'courseparticipants' 
-        AND constraint_name = 'courseparticipants_invite_link_fkey'
-    ) THEN
-        RAISE EXCEPTION 'Foreign key constraint courseparticipants_invite_link_fkey was not added';
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.table_constraints 
-        WHERE constraint_schema = 'public' 
-        AND table_name = 'courseparticipants' 
-        AND constraint_name = 'courseparticipants_course_group_fkey'
-    ) THEN
-        RAISE EXCEPTION 'Foreign key constraint courseparticipants_course_group_fkey was not added';
-    END IF;
-
-    -- Check that indexes were created
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_indexes 
-        WHERE schemaname = 'public' 
-        AND tablename = 'courseparticipants' 
-        AND indexname = 'idx_courseparticipants_invite_link'
-    ) THEN
-        RAISE EXCEPTION 'Index idx_courseparticipants_invite_link was not created';
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_indexes 
-        WHERE schemaname = 'public' 
-        AND tablename = 'courseparticipants' 
-        AND indexname = 'idx_courseparticipants_course_group'
-    ) THEN
-        RAISE EXCEPTION 'Index idx_courseparticipants_course_group was not created';
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_indexes 
-        WHERE schemaname = 'public' 
-        AND tablename = 'courseparticipants' 
-        AND indexname = 'idx_courseparticipants_group_account'
-    ) THEN
-        RAISE EXCEPTION 'Index idx_courseparticipants_group_account was not created';
-    END IF;
-
-    RAISE NOTICE 'Migration validation passed successfully';
-END $$;
-
--- ============================================================================
--- Record migration
--- ============================================================================
-
-INSERT INTO schema_migrations (version, description, applied_by)
-VALUES ('0006', 'Add invite_link_id and course_group_id to courseparticipants table', current_user)
-ON CONFLICT (version) DO NOTHING;
-
-COMMIT;
-
--- ============================================================================
--- Notes
--- ============================================================================
--- 
--- This migration adds two new nullable columns to courseparticipants:
--- 1. invite_link_id - links participant to the invite link they used to join
--- 2. course_group_id - links participant to the specific course group
---
--- Key decisions:
--- - Both columns are NULLABLE to support backward compatibility
--- - invite_link_id uses ON DELETE SET NULL (if link is deleted, participant remains)
--- - course_group_id uses ON DELETE CASCADE (if group is deleted, participants are deleted)
--- - Existing records are automatically updated where a unique group match exists
--- - Records with multiple matching groups are left NULL and require manual review
---
--- Next steps:
--- 1. Update application code to populate invite_link_id when participants join via invite link
--- 2. Update application code to populate course_group_id for all new participants
--- 3. Manually review and update records with NULL course_group_id (where multiple groups exist)
--- 4. Consider making course_group_id NOT NULL in a future migration after data cleanup
--- 5. Update API endpoints to include invite_link_id and course_group_id in responses
--- ============================================================================
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$function$
+;

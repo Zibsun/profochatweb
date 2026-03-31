@@ -122,17 +122,75 @@ export async function queryOne<T = any>(
 }
 
 /**
- * Получает account_id из контекста запроса
- * TODO: Реализовать получение из сессии/токена аутентификации
- * Пока возвращаем account_id = 1 (аккаунт по умолчанию)
+ * Получает account_id из JWT токена или localStorage
  */
 export function getAccountId(request?: Request): number {
-  // TODO: Получить account_id из:
-  // - JWT токена
-  // - Сессии пользователя
-  // - Заголовков запроса
-  // Пока используем account_id = 1 для разработки
-  return 1;
+  // Server-side: извлекаем из токена в заголовках
+  if (request) {
+    const authHeader = request.headers.get('authorization')
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '')
+      try {
+        // Декодируем JWT (без проверки подписи на клиенте)
+        const parts = token.split('.')
+        if (parts.length !== 3) {
+          return 1
+        }
+        const base64Url = parts[1]
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+        try {
+          const jsonPayload = decodeURIComponent(
+            atob(base64)
+              .split('')
+              .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+              .join('')
+          )
+          const payload = JSON.parse(jsonPayload)
+          return payload.account_id || 1
+        } catch {
+          return 1
+        }
+        return payload.account_id || 1
+      } catch {
+        return 1
+      }
+    }
+  }
+
+  // Client-side: из localStorage или из токена
+  if (typeof window !== 'undefined') {
+    const accountId = localStorage.getItem('account_id')
+    if (accountId) {
+      return parseInt(accountId, 10)
+    }
+
+    // Пытаемся извлечь из токена
+    const token = localStorage.getItem('auth_token')
+    if (token) {
+      try {
+        const parts = token.split('.')
+        if (parts.length !== 3) {
+          return 1
+        }
+        const base64Url = parts[1]
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+        const jsonPayload = decodeURIComponent(
+          atob(base64)
+            .split('')
+            .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+            .join('')
+        )
+        const payload = JSON.parse(jsonPayload)
+        const accountId = payload.account_id || 1
+        localStorage.setItem('account_id', String(accountId))
+        return accountId
+      } catch {
+        return 1
+      }
+    }
+  }
+
+  return 1
 }
 
 /**

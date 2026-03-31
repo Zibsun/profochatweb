@@ -625,8 +625,8 @@ export function GroupDetailView({ groupId }: GroupDetailViewProps) {
             </div>
           </dl>
         </div>
-          </>
-        )}
+        </>
+        ) : null}
       </div>
     </div>
   );

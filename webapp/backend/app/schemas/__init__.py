@@ -1,4 +1,4 @@
-from app.schemas.user import UserCreate, UserResponse, UserBase
+from app.schemas.user import UserCreate, UserResponse, UserBase, LoginRequest, LoginRequest
 from app.schemas.course import CourseResponse, CourseBase
 from app.schemas.lesson import LessonResponse, LessonBase
 from app.schemas.lesson_step import LessonStepResponse, LessonStepBase
@@ -10,6 +10,7 @@ __all__ = [
     'UserCreate',
     'UserResponse',
     'UserBase',
+    'LoginRequest',
     'CourseResponse',
     'CourseBase',
     'LessonResponse',

@@ -62,6 +62,14 @@ echo "🧹 Очистка кэша Next.js..."
 rm -rf .next 2>/dev/null
 rm -rf node_modules/.cache 2>/dev/null
 
+# Освобождение порта 3002, если он занят
+echo "🔍 Проверка порта 3002..."
+if lsof -ti:3002 > /dev/null 2>&1; then
+    echo "⚠️  Порт 3002 занят, освобождаю..."
+    lsof -ti:3002 | xargs kill -9 2>/dev/null || true
+    sleep 1
+fi
+
 npm run dev &
 FRONTEND_PID=$!
 
@@ -69,7 +77,7 @@ echo ""
 echo "✅ Оба сервера запущены!"
 echo ""
 echo "🌐 Backend: http://localhost:8000"
-echo "🌐 Frontend: http://localhost:3000"
+echo "🌐 Frontend: http://localhost:3002"
 echo ""
 echo "Нажмите Ctrl+C для остановки"
 echo ""

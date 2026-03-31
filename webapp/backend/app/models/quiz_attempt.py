@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Boolean, Numeric, DateTime, ForeignKey
+from sqlalchemy import Column, String, Boolean, Numeric, DateTime, ForeignKey, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import uuid
@@ -9,7 +9,7 @@ class QuizAttempt(Base):
     __tablename__ = "quiz_attempts"
     
     attempt_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.user_id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
     step_id = Column(UUID(as_uuid=True), ForeignKey("lesson_steps.step_id"), nullable=False)
     selected_option_id = Column(String, nullable=False)
     is_correct = Column(Boolean, nullable=False)

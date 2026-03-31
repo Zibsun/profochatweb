@@ -4,7 +4,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'ProfoChatBot Web',
-  description: 'Веб-версия обучающей платформы',
+  description: 'Web version of the learning platform',
 }
 
 export default function RootLayout({
@@ -20,4 +20,3 @@ export default function RootLayout({
     </html>
   )
 }
-
