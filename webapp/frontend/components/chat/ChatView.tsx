@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
+import { telegramToCommonMark } from './telegramMarkdown'
 import DOMPurify from 'isomorphic-dompurify'
 import dynamic from 'next/dynamic'
 
@@ -774,14 +775,14 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
           key={message.element_id || index}
           className="mb-3 flex flex-col justify-start px-2"
         >
+          {/* Медиа файлы */}
+          {message.media && message.media.length > 0 && renderMedia(message.media)}
           <div className="max-w-[85%] bg-blue-500 text-white rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm break-words">
             <div
               className="text-white text-[15px] leading-relaxed whitespace-pre-wrap"
               dangerouslySetInnerHTML={{ __html: sanitizedHTML }}
             />
           </div>
-          {/* Медиа файлы */}
-          {message.media && message.media.length > 0 && renderMedia(message.media)}
           {/* Inline кнопки */}
           {message.options && message.options.length > 0 ? (
             <div className="mt-2 flex flex-wrap gap-2 max-w-[85%]">
@@ -808,6 +809,8 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
           key={message.element_id || index}
           className="mb-3 flex flex-col justify-start px-2"
         >
+          {/* Медиа файлы */}
+          {message.media && message.media.length > 0 && renderMedia(message.media)}
           <div className="max-w-[85%] bg-blue-500 text-white rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm break-words">
             <div className="text-white text-[15px] leading-relaxed">
               <ReactMarkdown
@@ -822,19 +825,17 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
                   code: ({node, ...props}) => <code className="bg-blue-600 px-1 py-0.5 rounded text-sm break-all" {...props} />,
                   pre: ({node, ...props}) => <pre className="bg-blue-600 p-2 rounded mb-2 whitespace-pre-wrap break-words text-sm" {...props} />,
                   a: ({node, ...props}) => (
-                    <a 
-                      {...props} 
+                    <a
+                      {...props}
                       className="text-blue-200 underline hover:text-blue-100"
                       target="_blank"
                       rel="noopener noreferrer"
                     />
                   ),
                 }}
-              >{processedText}</ReactMarkdown>
+              >{telegramToCommonMark(processedText)}</ReactMarkdown>
             </div>
           </div>
-          {/* Медиа файлы */}
-          {message.media && message.media.length > 0 && renderMedia(message.media)}
           {/* Inline кнопки */}
           {message.options && message.options.length > 0 ? (
             <div className="mt-2 flex flex-wrap gap-2 max-w-[85%]">

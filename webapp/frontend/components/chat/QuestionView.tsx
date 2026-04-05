@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
+import { telegramToCommonMark } from './telegramMarkdown'
 
 interface QuestionAnswer {
   text: string
@@ -83,7 +84,7 @@ export default function QuestionView({
               ),
             }}
           >
-            {question.text}
+            {telegramToCommonMark(question.text)}
           </ReactMarkdown>
         </div>
       </div>

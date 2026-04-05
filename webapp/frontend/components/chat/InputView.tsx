@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
+import { telegramToCommonMark } from './telegramMarkdown'
 import DOMPurify from 'isomorphic-dompurify'
 
 interface InputElement {
@@ -121,7 +122,7 @@ export default function InputView({
               ),
             }}
           >
-            {input.text}
+            {telegramToCommonMark(input.text)}
           </ReactMarkdown>
         </div>
       )

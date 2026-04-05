@@ -862,7 +862,7 @@ export default function CoursePage() {
   return (
     <div className="h-screen bg-gray-50 flex flex-col items-center">
       {/* Контейнер фиксированной ширины */}
-      <div className="w-full max-w-lg flex flex-col h-full bg-gray-100">
+      <div className="w-full max-w-lg md:max-w-2xl lg:max-w-3xl flex flex-col h-full bg-gray-100">
       {/* Шапка */}
       <div className="bg-white border-b border-gray-200 px-4 py-2.5 flex items-center justify-between shrink-0">
         <div className="text-xs text-gray-400">

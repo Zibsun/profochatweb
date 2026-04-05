@@ -2,6 +2,7 @@
 
 import React from 'react'
 import ReactMarkdown from 'react-markdown'
+import { telegramToCommonMark } from './telegramMarkdown'
 
 interface RevisionViewProps {
   revision: {
@@ -74,7 +75,7 @@ export default function RevisionView({
             em: ({node, ...props}) => <em className="italic" {...props} />,
           }}
         >
-          {message}
+          {telegramToCommonMark(message)}
         </ReactMarkdown>
       </div>
       

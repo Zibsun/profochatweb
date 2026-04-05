@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
+import { telegramToCommonMark } from './telegramMarkdown'
 
 interface MultiChoiceAnswer {
   text: string
@@ -131,7 +132,7 @@ export default function MultiChoiceView({
               ),
             }}
           >
-            {multiChoice.text}
+            {telegramToCommonMark(multiChoice.text)}
           </ReactMarkdown>
         </div>
       </div>

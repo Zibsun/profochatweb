@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
+import { telegramToCommonMark } from './telegramMarkdown'
 import { dialogApi } from '@/lib/api/dialog'
 
 interface DialogElement {
@@ -243,7 +244,7 @@ export default function DialogView({ element, courseId, onNext }: DialogViewProp
     }
   }
   
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
@@ -307,7 +308,7 @@ export default function DialogView({ element, courseId, onNext }: DialogViewProp
                       <div className="text-sm leading-relaxed text-gray-800 break-words" style={{ wordWrap: 'break-word', overflowWrap: 'break-word', wordBreak: 'break-word' }}>
                         <ReactMarkdown
                           components={{
-                            p: ({node, ...props}) => <p className="mb-2 last:mb-0 text-gray-800 break-words" style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }} {...props} />,
+                            p: ({node, ...props}) => <p className="mb-4 last:mb-0 text-gray-800 break-words" style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }} {...props} />,
                             h1: ({node, ...props}) => <h1 className="text-lg font-bold mb-2 text-gray-900 break-words" style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }} {...props} />,
                             h2: ({node, ...props}) => <h2 className="text-base font-bold mb-2 text-gray-900 break-words" style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }} {...props} />,
                             h3: ({node, ...props}) => <h3 className="text-sm font-bold mb-2 text-gray-900 break-words" style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }} {...props} />,
@@ -328,7 +329,7 @@ export default function DialogView({ element, courseId, onNext }: DialogViewProp
                             em: ({node, ...props}) => <em className="text-gray-800 italic" {...props} />,
                           }}
                         >
-                          {safeContent}
+                          {telegramToCommonMark(safeContent).replace(/\n/g, '  \n')}
                         </ReactMarkdown>
                       </div>
                     ) : (
@@ -352,20 +353,25 @@ export default function DialogView({ element, courseId, onNext }: DialogViewProp
       {!dialogCompleted && (
         <div className="border-t border-gray-300 p-4 bg-white">
           <div className="flex gap-2">
-            <input
-              type="text"
+            <textarea
               value={inputValue}
               onChange={(e) => {
                 console.log('DialogView: Input changed', { value: e.target.value })
                 setInputValue(e.target.value)
+                // Автоматическая высота
+                e.target.style.height = 'auto'
+                e.target.style.height = Math.min(e.target.scrollHeight, 150) + 'px'
               }}
-              onKeyPress={(e) => {
-                console.log('DialogView: Key pressed', { key: e.key, inputValue })
-                handleKeyPress(e)
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  console.log('DialogView: Key pressed', { key: e.key, inputValue })
+                  handleKeyPress(e)
+                }
               }}
               placeholder="Введите сообщение..."
               disabled={loading}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 bg-white placeholder-gray-400"
+              rows={1}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 bg-white placeholder-gray-400 resize-none"
               style={{ color: '#111827' }}
             />
             <button

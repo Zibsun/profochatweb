@@ -5,6 +5,9 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'Кактус.Нота — тренажёры для сотрудников',
   description: 'Гибридные асинхронные курсы: ИИ-адаптация к каждому сотруднику, но без отвлечений от темы, типичных для ИИ-ботов.',
+  icons: {
+    icon: '/favicon.png',
+  },
 }
 
 export default function RootLayout({

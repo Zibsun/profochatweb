@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
+import { telegramToCommonMark } from './telegramMarkdown'
 import DOMPurify from 'isomorphic-dompurify'
 
 interface AudioElement {
@@ -114,7 +115,7 @@ export default function AudioView({ audio }: AudioViewProps) {
               ),
             }}
           >
-            {processedText}
+            {telegramToCommonMark(processedText)}
           </ReactMarkdown>
         </div>
       )
