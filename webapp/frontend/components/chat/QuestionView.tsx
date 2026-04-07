@@ -101,8 +101,8 @@ export default function QuestionView({
               onClick={() => handleAnswerClick(index)}
               disabled={isDisabled}
               className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-all ${isSelected
-                ? 'bg-blue-50 border-blue-500 text-blue-900'
-                : 'bg-white border-gray-300 text-gray-800 hover:border-blue-300 hover:bg-blue-50'
+                ? 'bg-gray-50 border-gray-400 text-gray-900'
+                : 'bg-white border-gray-300 text-gray-800 hover:border-gray-400 hover:bg-gray-50'
                 } ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
                 }`}
             >

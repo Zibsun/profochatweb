@@ -160,7 +160,10 @@ export default function InputView({
             <button
               onClick={handleSubmit}
               disabled={isSubmitting || !userAnswer.trim()}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
+              className="px-6 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
+              style={{ backgroundColor: '#118b64' }}
+              onMouseEnter={e => { if (!isSubmitting && userAnswer.trim()) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#0d6e4f' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#118b64' }}
             >
               {isSubmitting ? 'Отправка...' : 'Отправить'}
             </button>

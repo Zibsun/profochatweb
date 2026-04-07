@@ -795,9 +795,9 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
         >
           {/* Медиа файлы */}
           {message.media && message.media.length > 0 && renderMedia(message.media)}
-          <div className="max-w-[85%] bg-blue-500 text-white rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm break-words">
+          <div className="max-w-[85%] bg-brand-green-light text-gray-800 rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm break-words">
             <div
-              className="text-white text-[15px] leading-relaxed whitespace-pre-wrap"
+              className="text-gray-800 text-[15px] leading-relaxed whitespace-pre-wrap"
               dangerouslySetInnerHTML={{ __html: sanitizedHTML }}
             />
           </div>
@@ -811,7 +811,7 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
                     console.log("Inline button clicked:", option)
                     onInlineButtonClick?.(option)
                   }}
-                  className="px-4 py-2 bg-white border border-blue-500 text-blue-600 rounded-lg hover:bg-blue-50 active:bg-blue-100 text-sm font-medium transition-colors shadow-sm"
+                  className="px-4 py-2 bg-white border border-brand-green text-brand-green rounded-lg hover:bg-brand-green-light active:bg-brand-green-light text-sm font-medium transition-colors shadow-sm"
                 >
                   {option.text}
                 </button>
@@ -829,23 +829,23 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
         >
           {/* Медиа файлы */}
           {message.media && message.media.length > 0 && renderMedia(message.media)}
-          <div className="max-w-[85%] bg-blue-500 text-white rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm break-words">
-            <div className="text-white text-[15px] leading-relaxed">
+          <div className="max-w-[85%] bg-brand-green-light text-gray-800 rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm break-words">
+            <div className="text-gray-800 text-[15px] leading-relaxed">
               <ReactMarkdown
                 components={{
-                  p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
-                  h1: ({ node, ...props }) => <h1 className="text-xl font-bold mb-2" {...props} />,
-                  h2: ({ node, ...props }) => <h2 className="text-lg font-bold mb-2" {...props} />,
-                  h3: ({ node, ...props }) => <h3 className="text-base font-bold mb-2" {...props} />,
-                  ul: ({ node, ...props }) => <ul className="list-disc list-inside mb-2" {...props} />,
-                  ol: ({ node, ...props }) => <ol className="list-decimal list-inside mb-2" {...props} />,
-                  li: ({ node, ...props }) => <li className="mb-1" {...props} />,
-                  code: ({ node, ...props }) => <code className="bg-blue-600 px-1 py-0.5 rounded text-sm break-all" {...props} />,
-                  pre: ({ node, ...props }) => <pre className="bg-blue-600 p-2 rounded mb-2 whitespace-pre-wrap break-words text-sm" {...props} />,
+                  p: ({ node, ...props }) => <p className="mb-2 last:mb-0 text-gray-800" {...props} />,
+                  h1: ({ node, ...props }) => <h1 className="text-xl font-bold mb-2 text-gray-900" {...props} />,
+                  h2: ({ node, ...props }) => <h2 className="text-lg font-bold mb-2 text-gray-900" {...props} />,
+                  h3: ({ node, ...props }) => <h3 className="text-base font-bold mb-2 text-gray-900" {...props} />,
+                  ul: ({ node, ...props }) => <ul className="list-disc list-inside mb-2 text-gray-800" {...props} />,
+                  ol: ({ node, ...props }) => <ol className="list-decimal list-inside mb-2 text-gray-800" {...props} />,
+                  li: ({ node, ...props }) => <li className="mb-1 text-gray-800" {...props} />,
+                  code: ({ node, ...props }) => <code className="bg-green-100 px-1 py-0.5 rounded text-sm break-all text-gray-900" {...props} />,
+                  pre: ({ node, ...props }) => <pre className="bg-green-100 p-2 rounded mb-2 whitespace-pre-wrap break-words text-sm text-gray-900" {...props} />,
                   a: ({ node, ...props }) => (
                     <a
                       {...props}
-                      className="text-blue-200 underline hover:text-blue-100"
+                      className="text-brand-green underline hover:text-brand-green-hover"
                       target="_blank"
                       rel="noopener noreferrer"
                     />
@@ -864,7 +864,7 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
                     console.log("Inline button clicked:", option)
                     onInlineButtonClick?.(option)
                   }}
-                  className="px-4 py-2 bg-white border border-blue-500 text-blue-600 rounded-lg hover:bg-blue-50 active:bg-blue-100 text-sm font-medium transition-colors shadow-sm"
+                  className="px-4 py-2 bg-white border border-brand-green text-brand-green rounded-lg hover:bg-brand-green-light active:bg-brand-green-light text-sm font-medium transition-colors shadow-sm"
                 >
                   {option.text}
                 </button>

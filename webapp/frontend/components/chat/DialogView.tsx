@@ -293,15 +293,16 @@ export default function DialogView({ element, courseId, onNext }: DialogViewProp
                   <div
                     className={`max-w-[70%] p-3 rounded-lg break-words overflow-wrap-anywhere ${
                       message.role === 'user'
-                        ? 'bg-blue-600 text-white rounded-br-sm'
-                        : 'bg-gray-200 text-gray-800 rounded-bl-sm'
+                        ? 'text-white rounded-br-sm'
+                        : 'bg-gray-100 text-gray-800 rounded-bl-sm'
                     }`}
-                    style={{ 
-                      minWidth: '100px', 
+                    style={{
+                      minWidth: '100px',
                       display: 'block',
                       wordWrap: 'break-word',
                       overflowWrap: 'break-word',
-                      wordBreak: 'break-word'
+                      wordBreak: 'break-word',
+                      ...(message.role === 'user' ? { backgroundColor: '#118b64' } : {})
                     }}
                   >
                     {message.role === 'assistant' ? (
@@ -315,8 +316,8 @@ export default function DialogView({ element, courseId, onNext }: DialogViewProp
                             ul: ({node, ...props}) => <ul className="list-disc list-inside mb-2 text-gray-800 break-words" style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }} {...props} />,
                             ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-2 text-gray-800 break-words" style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }} {...props} />,
                             li: ({node, ...props}) => <li className="mb-1 text-gray-800 break-words" style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }} {...props} />,
-                            code: ({node, ...props}) => <code className="bg-gray-300 px-1 py-0.5 rounded text-xs text-gray-900 break-all" {...props} />,
-                            pre: ({node, ...props}) => <pre className="bg-gray-300 p-2 rounded mb-2 whitespace-pre-wrap break-words text-xs text-gray-900" {...props} />,
+                            code: ({node, ...props}) => <code className="bg-gray-200 px-1 py-0.5 rounded text-xs text-gray-900 break-all" {...props} />,
+                            pre: ({node, ...props}) => <pre className="bg-gray-200 p-2 rounded mb-2 whitespace-pre-wrap break-words text-xs text-gray-900" {...props} />,
                             a: ({node, ...props}) => (
                               <a 
                                 {...props} 
@@ -343,8 +344,8 @@ export default function DialogView({ element, courseId, onNext }: DialogViewProp
         )}
         {typing && (
           <div className="flex justify-start">
-            <div className="bg-gray-200 p-3 rounded-lg rounded-bl-sm">
-              <span className="animate-pulse text-gray-600">Печатает...</span>
+            <div className="bg-gray-100 p-3 rounded-lg rounded-bl-sm">
+              <span className="animate-pulse text-gray-600">Генерирую...</span>
             </div>
           </div>
         )}
@@ -380,7 +381,10 @@ export default function DialogView({ element, courseId, onNext }: DialogViewProp
                 handleSend()
               }}
               disabled={loading || !inputValue.trim()}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+              className="px-6 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+              style={{ backgroundColor: '#118b64' }}
+              onMouseEnter={e => { if (!loading && inputValue.trim()) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#0d6e4f' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#118b64' }}
             >
               Отправить
             </button>

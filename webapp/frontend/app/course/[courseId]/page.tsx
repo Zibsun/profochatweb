@@ -1115,7 +1115,8 @@ export default function CoursePage() {
             <button
               onClick={handleNext}
               disabled={loading || ('type' in currentElement && currentElement.type === 'end')}
-              className="w-full px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-lg font-medium transition-colors shadow-md"
+              className="w-full px-8 py-3 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed text-lg font-medium transition-colors shadow-md"
+              style={{ backgroundColor: '#118b64' }}
             >
               {loading ? 'Загрузка...' : (
                 ('type' in currentElement && (currentElement.type === 'unimplemented' || currentElement.type === 'test' || currentElement.type === 'revision' || currentElement.type === 'end'))

@@ -8,6 +8,9 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        'brand-green': '#118b64',
+        'brand-green-hover': '#0d6e4f',
+        'brand-green-light': '#ddf3e7',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {

@@ -148,8 +148,8 @@ export default function MultiChoiceView({
                 <label
                   key={index}
                   className={`flex items-start p-3 rounded-lg border-2 cursor-pointer transition-all ${isChecked
-                      ? 'bg-blue-50 border-blue-500 text-blue-900'
-                      : 'bg-white border-gray-300 text-gray-800 hover:border-blue-300 hover:bg-blue-50'
+                      ? 'bg-gray-50 border-gray-400 text-gray-900'
+                      : 'bg-white border-gray-300 text-gray-800 hover:border-gray-400 hover:bg-gray-50'
                     } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <input
@@ -169,7 +169,10 @@ export default function MultiChoiceView({
           <button
             onClick={handleSubmit}
             disabled={isSubmitting || localSelectedAnswers.size === 0}
-            className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
+            className="w-full px-6 py-3 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
+            style={{ backgroundColor: '#118b64' }}
+            onMouseEnter={e => { if (!isSubmitting && localSelectedAnswers.size > 0) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#0d6e4f' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#118b64' }}
           >
             {isSubmitting ? 'Отправка...' : 'Отправить'}
           </button>

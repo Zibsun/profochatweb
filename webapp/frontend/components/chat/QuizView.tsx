@@ -162,7 +162,7 @@ export default function QuizView({
               buttonClass += "bg-red-50 border-red-500 text-red-800"
             }
           } else if (isSelected) {
-            buttonClass += "bg-blue-50 border-blue-500 text-blue-800"
+            buttonClass += "bg-gray-50 border-gray-400 text-gray-800"
           } else if (showFeedback && isCorrectAnswer) {
             // Показываем правильный ответ зеленым, если был выбран неправильный
             buttonClass += "bg-green-50 border-green-300 text-green-700"
