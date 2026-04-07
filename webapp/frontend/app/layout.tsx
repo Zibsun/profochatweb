@@ -4,10 +4,13 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Кактус.Нота — тренажёры для сотрудников',
-  description: 'Гибридные асинхронные курсы: ИИ-адаптация к каждому сотруднику, но без отвлечений от темы, типичных для ИИ-ботов.',
+  description: 'Гибридные асинхронные курсы: адаптация к каждому сотруднику с помощью ИИ, но без отвлечений от темы.',
   icons: {
-    icon: '/favicon.png',
+    icon: '/assets/favicon.png',
   },
+  openGraph: {
+    images: [{ url: '/assets/preview-green.png' }], // Для превью в соцсетях
+  }
 }
 
 export default function RootLayout({
