@@ -14,7 +14,7 @@ COMMIT=$1
 > changed.txt
 for commit in $(git rev-list --reverse "${COMMIT}"..HEAD); do
   git diff-tree --no-commit-id --name-only -r --diff-filter=AM "$commit" | \
-  grep -vE "^docs/|^migrations/|^static/|^venv/|^tests/|\.sql$|^AGENTS\.md$|^CLAUDE\.md$" >> changed.txt
+  grep -vE "^docs/|^venv/|^tests/|^AGENTS\.md$|^CLAUDE\.md$" >> changed.txt
 done
 
 # Оставляем только уникальные пути к файлам (так как файл мог меняться в нескольких коммитах)
