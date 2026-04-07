@@ -3548,40 +3548,16 @@ def send_dialog_message(
             # Используем HTTPException, который обрабатывается CORS middleware
             raise HTTPException(status_code=500, detail=f"Ошибка генерации ответа: {str(e)}")
         
-        # Проверяем условия остановки (как в Telegram версии)
-        import re
+        # Проверяем {STOP} маркер
         stop_detected = False
         original_reply = reply
-        
-        # Проверяем {STOP} маркер (точное совпадение)
+
         if "{STOP}" in reply:
-            reply = reply.replace("{STOP}", "")
+            reply = reply.replace("{STOP}", "").strip()
             stop_detected = True
-            logger.info("send_dialog_message: Detected {STOP} marker, stop_detected=True")
-        
-        # Проверяем #конецдиалога маркер с помощью регулярного выражения
-        # Это обрабатывает все варианты: с пробелами, переносами строк, в начале/конце
-        if not stop_detected:
-            # Паттерн для поиска маркера с возможными пробелами и переносами строк вокруг
-            pattern = r'\s*#конецдиалога\s*'
-            if re.search(pattern, reply):
-                reply = re.sub(pattern, '', reply)
-                stop_detected = True
-                logger.warning(f"send_dialog_message: Detected '#конецдиалога' marker (via regex), stop_detected=True")
-        
-        # Удаляем лишние пробелы после удаления маркера (как в Telegram версии)
-        reply = reply.strip()
-        
-        # Финальная проверка: убеждаемся, что маркер действительно удален
-        if re.search(r'#конецдиалога|{STOP}', reply):
-            logger.error(f"send_dialog_message: ERROR! Stop marker still present after removal! original={original_reply[:200]}, current={reply[:200]}")
-            # Принудительно удаляем все варианты через regex
-            reply = re.sub(r'\s*#конецдиалога\s*', '', reply)
-            reply = reply.replace("{STOP}", "")
-            reply = reply.strip()
-            logger.warning(f"send_dialog_message: Force-removed stop marker via regex, final reply={reply[:200]}")
-        
-        logger.info(f"send_dialog_message: After stop marker removal, reply_length={len(reply)}, stop_detected={stop_detected}, reply_preview={reply[:100] if reply else 'EMPTY'}")
+            logger.info(f"send_dialog_message: Detected {{STOP}} marker, original_reply={original_reply[:200]}")
+
+        logger.info(f"send_dialog_message: reply_length={len(reply)}, stop_detected={stop_detected}, reply_preview={reply[:100] if reply else 'EMPTY'}")
         
         # Проверяем, пустой ли ответ после удаления маркера (как в Telegram версии)
         # Если ответ пустой и диалог завершен, не добавляем пустое сообщение
@@ -3598,52 +3574,9 @@ def send_dialog_message(
         # Сохраняем обновленную conversation в элемент (обновляем существующий dialog элемент)
         update_element_conversation(current_chat_id, course_id, run_id, message_data.element_id, conversation, repo)
         
-        # НЕ сохраняем ответ ассистента как отдельную запись - conversation уже обновлен в элементе
-        # Это позволяет сохранить весь контекст в одном месте
-        
-        # Если диалог завершен, автоматически переходим к следующему элементу
-        if stop_detected:
-            # Обновляем текущий элемент на следующий
-            next_element_data = get_next_element_from_course(course_id, message_data.element_id)
-            if next_element_data:
-                next_element_type = next_element_data.get("type", "message")
-                # Сохраняем следующий элемент
-                if next_element_type == "dialog":
-                    element_data = {
-                        "element_data": {
-                            "type": "dialog",
-                            "text": next_element_data.get("text", ""),
-                            "prompt": next_element_data.get("prompt", ""),
-                            "model": next_element_data.get("model"),
-                            "temperature": next_element_data.get("temperature"),
-                            "reasoning": next_element_data.get("reasoning"),
-                            "parse_mode": next_element_data.get("parse_mode", "MARKDOWN"),
-                            "link_preview": next_element_data.get("link_preview"),
-                            "auto_start": next_element_data.get("auto_start", False),
-                            "voice_response": next_element_data.get("voice_response", False),
-                            "transcription_language": next_element_data.get("transcription_language"),
-                            "tts_voice": next_element_data.get("tts_voice"),
-                            "tts_model": next_element_data.get("tts_model"),
-                            "tts_speed": next_element_data.get("tts_speed", 1.0),
-                            "conversation": next_element_data.get("conversation", [])
-                        }
-                    }
-                else:
-                    # Для других типов элементов используем стандартную логику
-                    element_data = {"element_data": next_element_data}
-                
-                repo.insert_element(
-                    chat_id=current_chat_id,
-                    course_id=course_id,
-                    username=None,
-                    element_id=next_element_data["element_id"],
-                    element_type=next_element_type,
-                    run_id=run_id,
-                    json_data=element_data,
-                    role="bot",
-                    report=next_element_data.get("text", "Next element")
-                )
-        
+        # Не вставляем следующий элемент здесь — фронтенд сам вызовет /next
+        # при получении stop=true
+
         return DialogMessageResponse(
             reply=reply,
             stop=stop_detected,
