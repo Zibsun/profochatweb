@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { telegramToCommonMark } from './telegramMarkdown'
 import DOMPurify from 'isomorphic-dompurify'
@@ -31,6 +31,10 @@ const RevisionView = dynamic(() => import('./RevisionView'), {
 })
 
 const DialogView = dynamic(() => import('./DialogView'), {
+  ssr: false,
+})
+
+const ImageLightbox = dynamic(() => import('./ImageLightbox'), {
   ssr: false,
 })
 
@@ -205,6 +209,7 @@ interface ChatViewProps {
 
 export default function ChatView({ messages, courseId, onInlineButtonClick, onQuizAnswer, quizStates = {}, onInputAnswer, inputStates = {}, onQuestionAnswer, questionStates = {}, onMultiChoiceAnswer, multiChoiceStates = {}, testResults = {}, testLoading = {}, revisionResults = {}, revisionLoading = {}, revisionCounter = {}, onStartRevision, onNext, onRestart }: ChatViewProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [lightbox, setLightbox] = useState<{ urls: string[]; index: number } | null>(null)
 
   // Автоматический скролл вниз при новых сообщениях
   useEffect(() => {
@@ -240,9 +245,14 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
       <div className="mt-2 space-y-2">
         {/* Группа изображений */}
         {images.length > 0 && (
-          <div className={`grid gap-2 ${images.length === 1 ? 'grid-cols-1' : images.length === 2 ? 'grid-cols-2' : 'grid-cols-2'}`}>
+          <div className={`grid gap-2 ${images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
             {images.map((url, imgIndex) => (
-              <div key={imgIndex} className="relative rounded-lg overflow-hidden shadow-sm bg-gray-100">
+              <div
+                key={imgIndex}
+                className="relative rounded-lg overflow-hidden shadow-sm bg-gray-100
+                  cursor-zoom-in"
+                onClick={() => setLightbox({ urls: images, index: imgIndex })}
+              >
                 <img
                   src={url}
                   alt={`Image ${imgIndex + 1}`}
@@ -251,11 +261,7 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
                   crossOrigin="anonymous"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement
-                    console.error(`Failed to load image: ${url}`)
                     target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23e5e7eb" width="400" height="300"/%3E%3Ctext fill="%239ca3af" font-family="sans-serif" font-size="16" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EИзображение не загружено%3C/text%3E%3C/svg%3E'
-                  }}
-                  onLoad={() => {
-                    console.log(`Successfully loaded image: ${url}`)
                   }}
                 />
               </div>
@@ -273,16 +279,12 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
               preload="metadata"
               crossOrigin="anonymous"
               onError={(e) => {
-                console.error(`Failed to load video: ${url}`)
                 const target = e.target as HTMLVideoElement
                 target.style.display = 'none'
                 const errorDiv = document.createElement('div')
                 errorDiv.className = 'p-4 text-center text-gray-500'
                 errorDiv.textContent = 'Видео не загружено'
                 target.parentElement?.appendChild(errorDiv)
-              }}
-              onLoadedData={() => {
-                console.log(`Successfully loaded video: ${url}`)
               }}
             >
               Ваш браузер не поддерживает видео.
@@ -877,22 +879,33 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto py-4 min-h-0">
-        {messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center text-gray-500">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-400 mx-auto mb-4"></div>
-              <p>Загрузка сообщений...</p>
+    <>
+      <div className="flex flex-col h-full">
+        <div className="flex-1 overflow-y-auto py-4 min-h-0">
+          {messages.length === 0 ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center text-gray-500">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-400 mx-auto mb-4"></div>
+                <p>Загрузка сообщений...</p>
+              </div>
             </div>
-          </div>
-        ) : (
-          <>
-            {messages.map((element, index) => renderElement(element, index))}
-            <div ref={messagesEndRef} />
-          </>
-        )}
+          ) : (
+            <>
+              {messages.map((element, index) => renderElement(element, index))}
+              <div ref={messagesEndRef} />
+            </>
+          )}
+        </div>
       </div>
-    </div>
+
+      {lightbox && (
+        <ImageLightbox
+          urls={lightbox.urls}
+          index={lightbox.index}
+          onClose={() => setLightbox(null)}
+          onNavigate={(i) => setLightbox({ urls: lightbox.urls, index: i })}
+        />
+      )}
+    </>
   )
 }

@@ -250,6 +250,16 @@ export default function CoursePage() {
 
   const loadCourse = async () => {
     try {
+      if (typeof navigator !== 'undefined') {
+        const isBot = /bot|googlebot|crawler|spider|robot|crawling|facebookexternalhit|vkshare|whatsapp|telegram|viber/i.test(navigator.userAgent)
+        if (isBot) {
+          console.log('Bot detected, skipping course start')
+          setError('Для прохождения курса, пожалуйста, перейдите по ссылке в обычном браузере.')
+          setLoading(false)
+          return
+        }
+      }
+
       setLoading(true)
       setError(null)
 
