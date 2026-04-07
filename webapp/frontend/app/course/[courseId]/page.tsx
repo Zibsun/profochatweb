@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 
 const ChatView = dynamic(() => import('@/components/chat/ChatView'), {
@@ -127,11 +127,19 @@ interface RevisionResult {
   revision_chain: Array<Record<string, { element_data: any }>>  // Формат: [{element_id: {element_data: {...}}}, ...]
 }
 
-type CourseElement = MessageElement | QuizElement | AudioElement | InputElement | QuestionElement | MultiChoiceElement | UnimplementedElement | TestElement | EndElement | RevisionElement
+interface SystemMessageElement {
+  element_id: string
+  type: "system"
+  text: string
+}
+
+type CourseElement = MessageElement | QuizElement | AudioElement | InputElement | QuestionElement | MultiChoiceElement | UnimplementedElement | TestElement | EndElement | RevisionElement | SystemMessageElement
 
 export default function CoursePage() {
   const params = useParams()
+  const searchParams = useSearchParams()
   const courseToken = params.courseId as string // URL содержит токен, не course_id
+  const startElementId = searchParams.get('element')
   const [courseId, setCourseId] = useState<string | null>(null)
   const storageKey = `course_messages_${courseToken}`
   const [messages, setMessages] = useState<CourseElement[]>(() => {
@@ -279,7 +287,11 @@ export default function CoursePage() {
       setCourseExists(true)
 
       // Начинаем курс (создаем сессию, если её нет)
-      const startResponse = await fetch(`${apiUrl}/api/mvp/courses/${resolvedCourseId}/start`, {
+      const startUrl = new URL(`${apiUrl}/api/mvp/courses/${resolvedCourseId}/start`)
+      if (startElementId) {
+        startUrl.searchParams.set('element_id', startElementId)
+      }
+      const startResponse = await fetch(startUrl.toString(), {
         method: "POST",
         credentials: "include",
       });
@@ -327,17 +339,35 @@ export default function CoursePage() {
       setCurrentElement(currentElement)
       // Восстанавливаем или инициализируем историю
       if (currentElement) {
-        setMessages(prev => {
-          if (prev.length > 0) {
-            // Есть сохранённая история — добавляем текущий элемент если его нет
-            const lastId = prev[prev.length - 1]?.element_id
-            if (lastId !== currentElement.element_id) {
-              return [...prev, currentElement]
-            }
-            return prev
+        if (startElementId) {
+          // При переходе по ссылке с ?element= добавляем системное
+          // сообщение-разделитель перед новым элементом
+          const systemMsg: SystemMessageElement = {
+            element_id: '__system_jump__',
+            type: 'system',
+            text: 'Переход к новому упражнению по ссылке:',
           }
-          return [currentElement]
-        })
+          setMessages(prev => {
+            const lastId = prev[prev.length - 1]?.element_id
+            // Уже добавлено (повторный вызов) — не дублируем
+            if (lastId === currentElement.element_id) return prev
+            // Убираем висящий system-разделитель, если есть
+            const base = lastId === '__system_jump__' ? prev.slice(0, -1) : prev
+            return [...base, systemMsg, currentElement]
+          })
+        } else {
+          setMessages(prev => {
+            if (prev.length > 0) {
+              // Есть сохранённая история — добавляем текущий элемент если его нет
+              const lastId = prev[prev.length - 1]?.element_id
+              if (lastId !== currentElement.element_id) {
+                return [...prev, currentElement]
+              }
+              return prev
+            }
+            return [currentElement]
+          })
+        }
       }
     } catch (err) {
       console.error('Ошибка загрузки курса:', err)

@@ -9,7 +9,7 @@ import yaml
 import re
 import logging
 import httpx
-from fastapi import APIRouter, HTTPException, status, Cookie, Response, Request, Depends
+from fastapi import APIRouter, HTTPException, status, Cookie, Response, Request, Depends, Query
 from fastapi.responses import StreamingResponse
 from typing import Optional, List, Dict, Tuple
 from pydantic import BaseModel, Field
@@ -266,6 +266,7 @@ class MultiChoiceElement(BaseModel):
     feedback_correct: str
     feedback_partial: str
     feedback_incorrect: str
+    mark: Optional[bool] = None
 
 
 class IndividualFeedback(BaseModel):
@@ -502,6 +503,7 @@ def get_current_element_from_conversation(chat_id: int, course_id: str, run_id: 
                             "feedback_correct": first_element_data.get("feedback_correct", ""),
                             "feedback_partial": first_element_data.get("feedback_partial", ""),
                             "feedback_incorrect": first_element_data.get("feedback_incorrect", ""),
+                            "mark": first_element_data.get("mark"),
                         }
                         logger.info(f"get_current_element_from_conversation: revision chain multi_choice element_id={first_element_id}")
                         return result
@@ -618,6 +620,7 @@ def get_current_element_from_conversation(chat_id: int, course_id: str, run_id: 
                 "feedback_correct": element_info.get("feedback_correct", ""),
                 "feedback_partial": element_info.get("feedback_partial", ""),
                 "feedback_incorrect": element_info.get("feedback_incorrect", ""),
+                "mark": element_info.get("mark"),
             }
             logger.info(f"get_current_element_from_conversation: multi_choice element_id={element_id}")
             return result
@@ -1288,6 +1291,76 @@ def get_first_element_from_course(course_id: str) -> Optional[dict]:
     return None
 
 
+def get_element_from_course_by_id(course_id: str, target_element_id: str) -> Optional[dict]:
+    """Получение элемента курса по его ID"""
+    try:
+        course_data = get_course_data(course_id)
+        if not course_data:
+            return None
+
+        if target_element_id not in course_data:
+            logger.warning(
+                f"get_element_from_course_by_id: element {target_element_id} "
+                f"not found in course {course_id}"
+            )
+            return None
+
+        keys = list(course_data.keys())
+        idx = keys.index(target_element_id)
+
+        if idx == 0:
+            return get_first_element_from_course(course_id)
+
+        prev_element_id = keys[idx - 1]
+        return get_next_element_from_course(course_id, prev_element_id)
+    except Exception as e:
+        logger.error(
+            f"get_element_from_course_by_id: error for {course_id}/{target_element_id}: {e}",
+            exc_info=True
+        )
+        return None
+
+
+def save_element_to_conversation(
+    element: dict,
+    course_id: str,
+    chat_id: int,
+    run_id: int,
+    repo: "CourseRepository"
+) -> None:
+    """Сохранение элемента курса в conversation (используется для jump-to-element)"""
+    element_type = element.get("type", "message")
+    element_id = element["element_id"]
+
+    element_data_for_db = {k: v for k, v in element.items() if k != "element_id"}
+    if "type" not in element_data_for_db:
+        element_data_for_db["type"] = element_type
+
+    repo.insert_element(
+        chat_id=chat_id,
+        course_id=course_id,
+        username=None,
+        element_id=element_id,
+        element_type=element_type,
+        run_id=run_id,
+        json_data={"element_data": element_data_for_db},
+        role="bot",
+        report=element.get("text") or f"{element_type} element"
+    )
+    logger.info(
+        f"save_element_to_conversation: saved {element_type} element_id={element_id}"
+    )
+
+
+def get_course_start_element_id(course_id: str) -> Optional[str]:
+    """Получение стартового element_id из courses.yml (если задан)"""
+    courses = load_courses_yml()
+    course_info = courses.get(course_id, {})
+    if isinstance(course_info, dict):
+        return course_info.get("element")
+    return None
+
+
 def get_next_element_from_course(course_id: str, current_element_id: str) -> Optional[dict]:
     """Получение следующего элемента курса из YAML"""
     try:
@@ -1787,6 +1860,7 @@ def get_current_element(
 @router.post("/courses/{course_id}/start")
 def start_course(
     course_id: str,
+    element_id: Optional[str] = Query(None, description="ID элемента для перехода"),
     chat_id: Optional[int] = Cookie(None),
     response: Response = None,
     repo: CourseRepository = Depends(get_course_repository)
@@ -1796,7 +1870,7 @@ def start_course(
     current_chat_id = get_or_create_chat_id(chat_id)
     if not chat_id:
         response.set_cookie(key="chat_id", value=str(current_chat_id), max_age=31536000)
-    
+
     # Проверяем существование курса
     course_path = get_course_path(course_id)
     if not course_path:
@@ -1804,17 +1878,47 @@ def start_course(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Курс не найден"
         )
-    
+
+    # Если задан element_id — прыжок к конкретному элементу
+    if element_id:
+        target_element = get_element_from_course_by_id(course_id, element_id)
+        if not target_element:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Элемент {element_id} не найден в курсе"
+            )
+        existing_run_id = get_active_run(current_chat_id, course_id, repo)
+        run_id = existing_run_id or repo.create_run(
+            course_id, None, current_chat_id, None, None
+        )
+        save_element_to_conversation(
+            target_element, course_id, current_chat_id, run_id, repo
+        )
+        logger.info(
+            f"start_course: jump to element_id={element_id}, run_id={run_id}"
+        )
+        return {"run_id": run_id, "message": "Переход к элементу"}
+
     # Проверяем, есть ли уже активная сессия
     existing_run_id = get_active_run(current_chat_id, course_id, repo)
     if existing_run_id:
         return {"run_id": existing_run_id, "message": "Сессия уже существует"}
-    
+
     # Создаем новую сессию
     run_id = repo.create_run(course_id, None, current_chat_id, None, None)
-    
-    # Получаем первый элемент и сохраняем его в conversation
-    element = get_first_element_from_course(course_id)
+
+    # Определяем стартовый элемент: из courses.yml или первый
+    yml_start_element_id = get_course_start_element_id(course_id)
+    if yml_start_element_id:
+        element = get_element_from_course_by_id(course_id, yml_start_element_id)
+        if not element:
+            logger.warning(
+                f"start_course: courses.yml element={yml_start_element_id} "
+                f"not found in course {course_id}, falling back to first element"
+            )
+            element = get_first_element_from_course(course_id)
+    else:
+        element = get_first_element_from_course(course_id)
     if element:
         element_type = element.get("type", "message")
         logger.info(f"start_course: saving element type={element_type}, element_id={element.get('element_id')}")
@@ -2876,7 +2980,8 @@ def submit_input_answer(
         score = 1 if is_correct else 0
     else:
         # Если correct_answer не указан, просто принимаем ответ без проверки
-        feedback = "Ответ принят"
+        # Возвращаем пустой feedback, чтобы фронтенд ничего не показывал
+        feedback = ""
         score = 0
     
     # Сохраняем ответ пользователя в conversation

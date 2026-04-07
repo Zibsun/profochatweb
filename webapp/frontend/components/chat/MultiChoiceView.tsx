@@ -45,7 +45,7 @@ export default function MultiChoiceView({
   const [localSelectedAnswers, setLocalSelectedAnswers] = useState<Set<number>>(
     new Set(selectedAnswers || [])
   )
-  
+
   // Сбрасываем состояние при изменении multiChoice элемента или когда showFeedback становится false/undefined
   useEffect(() => {
     // Если showFeedback отсутствует или false, сбрасываем локальное состояние
@@ -54,20 +54,20 @@ export default function MultiChoiceView({
       setIsSubmitting(false)
     }
   }, [multiChoice.element_id, showFeedback])
-  
+
   // Дополнительно сбрасываем состояние при изменении element_id, даже если showFeedback еще true
   useEffect(() => {
     setLocalSelectedAnswers(new Set())
     setIsSubmitting(false)
   }, [multiChoice.element_id])
-  
+
   // Синхронизируем localSelectedAnswers с selectedAnswers пропсом, если он изменился и showFeedback false
   useEffect(() => {
     if (!showFeedback && selectedAnswers !== undefined) {
       setLocalSelectedAnswers(new Set(selectedAnswers))
     }
   }, [selectedAnswers, showFeedback])
-  
+
   console.log("MultiChoiceView rendered with multiChoice:", multiChoice)
   console.log("MultiChoiceView answers:", multiChoice.answers)
   console.log("MultiChoiceView selectedAnswers:", selectedAnswers)
@@ -121,8 +121,8 @@ export default function MultiChoiceView({
         <div className="text-gray-800 text-lg leading-relaxed">
           <ReactMarkdown
             components={{
-              p: ({node, ...props}) => <p className="mb-2" {...props} />,
-              a: ({node, ...props}) => (
+              p: ({ node, ...props }) => <p className="mb-2" {...props} />,
+              a: ({ node, ...props }) => (
                 <a
                   {...props}
                   className="text-blue-200 underline hover:text-blue-100"
@@ -143,15 +143,14 @@ export default function MultiChoiceView({
           <div className="space-y-2 mb-4">
             {multiChoice.answers.map((answer, index) => {
               const isChecked = localSelectedAnswers.has(index)
-              
+
               return (
                 <label
                   key={index}
-                  className={`flex items-start p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                    isChecked
+                  className={`flex items-start p-3 rounded-lg border-2 cursor-pointer transition-all ${isChecked
                       ? 'bg-blue-50 border-blue-500 text-blue-900'
                       : 'bg-white border-gray-300 text-gray-800 hover:border-blue-300 hover:bg-blue-50'
-                  } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <input
                     type="checkbox"
@@ -188,6 +187,7 @@ export default function MultiChoiceView({
 
                 if (!isSelected) {
                   // Показываем невыбранные правильные ответы серым цветом
+                  /*
                   if (isCorrectAnswer) {
                     return (
                       <div
@@ -205,6 +205,7 @@ export default function MultiChoiceView({
                       </div>
                     )
                   }
+                  */
                   return null
                 }
 
@@ -231,9 +232,8 @@ export default function MultiChoiceView({
                       type="checkbox"
                       checked={true}
                       disabled
-                      className={`mt-1 mr-3 w-5 h-5 ${
-                        isCorrectAnswer ? 'text-green-600' : 'text-red-600'
-                      } border-gray-300 rounded`}
+                      className={`mt-1 mr-3 w-5 h-5 ${isCorrectAnswer ? 'text-green-600' : 'text-red-600'
+                        } border-gray-300 rounded`}
                     />
                     <div className="flex-1">
                       <span className="font-medium">{answer.text}</span>
@@ -254,15 +254,14 @@ export default function MultiChoiceView({
 
           {/* Итоговое сообщение */}
           {feedback && (
-            <div className={`mt-4 p-4 rounded-lg border-2 ${
-              isCorrect
+            <div className={`mt-4 p-4 rounded-lg border-2 ${isCorrect
                 ? 'bg-green-50 border-green-200 text-green-800'
                 : score === 0.5
-                ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
-                : 'bg-red-50 border-red-200 text-red-800'
-            }`}>
+                  ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
+                  : 'bg-red-50 border-red-200 text-red-800'
+              }`}>
               <p className="font-medium mb-1">{feedback}</p>
-              {score !== undefined && (
+              {score !== undefined && (multiChoice.mark === true) && (
                 <p className="text-sm opacity-75">
                   Оценка: {score}/1.0
                 </p>

@@ -32,7 +32,7 @@ export default function QuestionView({
   feedback
 }: QuestionViewProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
-  
+
   // Сбрасываем состояние при изменении question элемента или когда showFeedback становится false/undefined
   useEffect(() => {
     // Если showFeedback отсутствует или false, сбрасываем локальное состояние
@@ -40,12 +40,12 @@ export default function QuestionView({
       setIsSubmitting(false)
     }
   }, [question.element_id, showFeedback])
-  
+
   // Дополнительно сбрасываем состояние при изменении element_id, даже если showFeedback еще true
   useEffect(() => {
     setIsSubmitting(false)
   }, [question.element_id])
-  
+
   console.log("QuestionView rendered with question:", question)
   console.log("QuestionView answers:", question.answers)
   console.log("QuestionView selectedAnswer:", selectedAnswer)
@@ -73,8 +73,8 @@ export default function QuestionView({
         <div className="text-gray-800 text-lg leading-relaxed">
           <ReactMarkdown
             components={{
-              p: ({node, ...props}) => <p className="mb-2" {...props} />,
-              a: ({node, ...props}) => (
+              p: ({ node, ...props }) => <p className="mb-2" {...props} />,
+              a: ({ node, ...props }) => (
                 <a
                   {...props}
                   className="text-blue-200 underline hover:text-blue-100"
@@ -100,13 +100,11 @@ export default function QuestionView({
               key={index}
               onClick={() => handleAnswerClick(index)}
               disabled={isDisabled}
-              className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-all ${
-                isSelected
-                  ? 'bg-blue-50 border-blue-500 text-blue-900'
-                  : 'bg-white border-gray-300 text-gray-800 hover:border-blue-300 hover:bg-blue-50'
-              } ${
-                isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-              }`}
+              className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-all ${isSelected
+                ? 'bg-blue-50 border-blue-500 text-blue-900'
+                : 'bg-white border-gray-300 text-gray-800 hover:border-blue-300 hover:bg-blue-50'
+                } ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                }`}
             >
               <span className="font-medium">{answer.text}</span>
             </button>

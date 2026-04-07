@@ -24,13 +24,13 @@ interface InputViewProps {
   isCorrect?: boolean
 }
 
-export default function InputView({ 
-  input, 
-  onAnswerSubmitted, 
+export default function InputView({
+  input,
+  onAnswerSubmitted,
   submittedAnswer,
   showFeedback,
   feedback,
-  isCorrect 
+  isCorrect
 }: InputViewProps) {
   const [userAnswer, setUserAnswer] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -43,7 +43,7 @@ export default function InputView({
       setIsSubmitting(false)
     }
   }, [input.element_id, showFeedback])
-  
+
   // Дополнительно сбрасываем состояние при изменении element_id, даже если showFeedback еще true
   useEffect(() => {
     setUserAnswer('')
@@ -88,7 +88,7 @@ export default function InputView({
         ALLOWED_TAGS: ['b', 'i', 'u', 'code', 'pre', 'p', 'br', 'a', 'strong', 'em', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'tg-spoiler'],
         ALLOWED_ATTR: ['href', 'target', 'rel']
       })
-      
+
       // Преобразуем tg-spoiler в details/summary для браузера
       sanitizedHTML = sanitizedHTML.replace(
         /<tg-spoiler>/gi,
@@ -98,7 +98,7 @@ export default function InputView({
         /<\/tg-spoiler>/gi,
         '</div></details>'
       )
-      
+
       return (
         <div
           className="text-gray-800 text-lg leading-relaxed whitespace-pre-wrap mb-3"
@@ -111,8 +111,8 @@ export default function InputView({
         <div className="text-gray-800 text-lg leading-relaxed mb-3">
           <ReactMarkdown
             components={{
-              p: ({node, ...props}) => <p className="mb-2" {...props} />,
-              a: ({node, ...props}) => (
+              p: ({ node, ...props }) => <p className="mb-2" {...props} />,
+              a: ({ node, ...props }) => (
                 <a
                   {...props}
                   className="text-blue-200 underline hover:text-blue-100"
@@ -181,14 +181,12 @@ export default function InputView({
 
           {/* Feedback */}
           {feedback && (
-            <div className={`p-3 rounded-lg ${
-              isCorrect 
-                ? 'bg-green-50 border border-green-200' 
+            <div className={`p-3 rounded-lg ${isCorrect
+                ? 'bg-green-50 border border-green-200'
                 : 'bg-red-50 border border-red-200'
-            }`}>
-              <p className={`text-sm font-medium ${
-                isCorrect ? 'text-green-800' : 'text-red-800'
               }`}>
+              <p className={`text-sm font-medium ${isCorrect ? 'text-green-800' : 'text-red-800'
+                }`}>
                 {isCorrect ? '✅' : '❌'} {feedback}
               </p>
               {!isCorrect && input.correct_answer && (
