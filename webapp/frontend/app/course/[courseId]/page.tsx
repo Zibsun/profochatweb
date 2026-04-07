@@ -869,8 +869,12 @@ export default function CoursePage() {
 
   const handleRestart = async () => {
     if (!confirm('Начать курс с начала? Весь прогресс будет сброшен.')) return
-    // Очищаем localStorage
+    // Очищаем localStorage: курс и все сохранённые диалоги
     localStorage.removeItem(storageKey)
+    const dialogPrefix = `dialog_state_${courseId}_`
+    Object.keys(localStorage)
+      .filter(key => key.startsWith(dialogPrefix))
+      .forEach(key => localStorage.removeItem(key))
     // Удаляем cookie chat_id чтобы создать новую сессию
     document.cookie = 'chat_id=; max-age=0; path=/'
     // Сбрасываем состояние
