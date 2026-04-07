@@ -368,8 +368,8 @@ def generate_chat_id() -> int:
     """Генерация chat_id для анонимного пользователя"""
     import random
     # Генерируем случайный chat_id в диапазоне, который не пересекается с реальными Telegram ID
-    # Telegram ID обычно начинаются с 1, используем диапазон 1000000000-9999999999
-    return random.randint(1000000000, 9999999999)
+    # Telegram ID обычно начинаются с 1, используем диапазон 20000000000-100000000000
+    return random.randint(20000000000, 100000000000)
 
 
 def get_or_create_chat_id(chat_id_cookie: Optional[int] = None) -> int:
