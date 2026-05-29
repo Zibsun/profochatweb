@@ -51,6 +51,10 @@ logs/
 # Database
 *.db
 *.sqlite
+
+# Local Docker overrides
+docker-compose.local.yml
+webapp/docker-compose.local.yml
 *.sqlite3
 
 # Backup files
