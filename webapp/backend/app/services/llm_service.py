@@ -96,7 +96,7 @@ def _prepare_params(
     
     # Если модель не указана, используем дефолтную
     if not model:
-        model = "gpt-4-turbo"
+        model = "gpt-4.1"
     
     # Применяем маппинг если нужно
     model = model_mapping.get(model, model)
