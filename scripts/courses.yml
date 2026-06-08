@@ -68,6 +68,9 @@ test_test_element:
 ai_bee1_v12:
   path: scripts/ai_bee1_v12.yml
   token: GkpIHg0G3k66EyzysAUgACRJGbKZ7qzj
+ai_demo3:
+  path: scripts/ai_demo3_26jun.yml
+  token: 30s0YWVGccMl5stmOEwc4oo_AjqnxzXp
 test_course_editor:
   path: scripts/test_course_editor.yml
   token: k6qyhES5oIaMNHmaS3ewD8JmS15RZ2lX
