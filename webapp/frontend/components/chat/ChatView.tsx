@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { telegramToCommonMark } from './telegramMarkdown'
 import DOMPurify from 'isomorphic-dompurify'
@@ -31,6 +31,10 @@ const RevisionView = dynamic(() => import('./RevisionView'), {
 })
 
 const DialogView = dynamic(() => import('./DialogView'), {
+  ssr: false,
+})
+
+const ImageLightbox = dynamic(() => import('./ImageLightbox'), {
   ssr: false,
 })
 
@@ -103,6 +107,7 @@ interface MultiChoiceElement {
   feedback_correct: string
   feedback_partial: string
   feedback_incorrect: string
+  mark?: boolean
 }
 
 interface UnimplementedElement {
@@ -138,6 +143,12 @@ interface RevisionElement {
   button?: string
 }
 
+interface SystemMessageElement {
+  element_id: string
+  type: "system"
+  text: string
+}
+
 interface DialogElement {
   element_id: string
   type: "dialog"
@@ -154,7 +165,7 @@ interface DialogElement {
   tts_voice?: string
   tts_model?: string
   tts_speed?: number
-  conversation?: Array<{role: string, content: string}>
+  conversation?: Array<{ role: string, content: string }>
 }
 
 interface RevisionResult {
@@ -172,7 +183,7 @@ interface TestResult {
   feedback_message: string
 }
 
-type CourseElement = MessageElement | QuizElement | AudioElement | InputElement | QuestionElement | MultiChoiceElement | UnimplementedElement | TestElement | EndElement | RevisionElement | DialogElement
+type CourseElement = MessageElement | QuizElement | AudioElement | InputElement | QuestionElement | MultiChoiceElement | UnimplementedElement | TestElement | EndElement | RevisionElement | DialogElement | SystemMessageElement
 
 interface ChatViewProps {
   messages: CourseElement[]
@@ -198,6 +209,7 @@ interface ChatViewProps {
 
 export default function ChatView({ messages, courseId, onInlineButtonClick, onQuizAnswer, quizStates = {}, onInputAnswer, inputStates = {}, onQuestionAnswer, questionStates = {}, onMultiChoiceAnswer, multiChoiceStates = {}, testResults = {}, testLoading = {}, revisionResults = {}, revisionLoading = {}, revisionCounter = {}, onStartRevision, onNext, onRestart }: ChatViewProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [lightbox, setLightbox] = useState<{ urls: string[]; index: number } | null>(null)
 
   // Автоматический скролл вниз при новых сообщениях
   useEffect(() => {
@@ -233,9 +245,14 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
       <div className="mt-2 space-y-2">
         {/* Группа изображений */}
         {images.length > 0 && (
-          <div className={`grid gap-2 ${images.length === 1 ? 'grid-cols-1' : images.length === 2 ? 'grid-cols-2' : 'grid-cols-2'}`}>
+          <div className={`grid gap-2 ${images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
             {images.map((url, imgIndex) => (
-              <div key={imgIndex} className="relative rounded-lg overflow-hidden shadow-sm bg-gray-100">
+              <div
+                key={imgIndex}
+                className="relative rounded-lg overflow-hidden shadow-sm bg-gray-100
+                  cursor-zoom-in"
+                onClick={() => setLightbox({ urls: images, index: imgIndex })}
+              >
                 <img
                   src={url}
                   alt={`Image ${imgIndex + 1}`}
@@ -244,18 +261,14 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
                   crossOrigin="anonymous"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement
-                    console.error(`Failed to load image: ${url}`)
                     target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23e5e7eb" width="400" height="300"/%3E%3Ctext fill="%239ca3af" font-family="sans-serif" font-size="16" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EИзображение не загружено%3C/text%3E%3C/svg%3E'
-                  }}
-                  onLoad={() => {
-                    console.log(`Successfully loaded image: ${url}`)
                   }}
                 />
               </div>
             ))}
           </div>
         )}
-        
+
         {/* Видео файлы */}
         {videos.map((url, vidIndex) => (
           <div key={vidIndex} className="relative rounded-lg overflow-hidden shadow-sm bg-gray-100">
@@ -266,16 +279,12 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
               preload="metadata"
               crossOrigin="anonymous"
               onError={(e) => {
-                console.error(`Failed to load video: ${url}`)
                 const target = e.target as HTMLVideoElement
                 target.style.display = 'none'
                 const errorDiv = document.createElement('div')
                 errorDiv.className = 'p-4 text-center text-gray-500'
                 errorDiv.textContent = 'Видео не загружено'
                 target.parentElement?.appendChild(errorDiv)
-              }}
-              onLoadedData={() => {
-                console.log(`Successfully loaded video: ${url}`)
               }}
             >
               Ваш браузер не поддерживает видео.
@@ -294,7 +303,7 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
       // Для HTML ничего не делаем, ссылки уже в формате <a>
       return text
     }
-    
+
     // Для Markdown: преобразуем обычные URL в markdown ссылки
     // Регулярное выражение для поиска URL (http/https)
     const urlRegex = /(https?:\/\/[^\s]+)/g
@@ -310,11 +319,11 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
   const isElementInActiveRevisionChain = (elementId: string, index: number): boolean => {
     console.log(`isElementInActiveRevisionChain called: elementId=${elementId}, index=${index}, messages.length=${messages.length}`)
     console.log(`revisionResults keys:`, Object.keys(revisionResults))
-    
+
     // Ищем последний элемент revision в массиве messages до текущего индекса
     let lastRevisionIndex = -1
     let lastRevisionElementId: string | null = null
-    
+
     for (let i = index - 1; i >= 0; i--) {
       const msg = messages[i]
       if ('type' in msg && msg.type === 'revision') {
@@ -324,7 +333,7 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
         break // Нашли последний revision элемент перед текущим
       }
     }
-    
+
     // Если нашли revision элемент, проверяем, является ли текущий элемент частью его цепочки
     if (lastRevisionIndex >= 0 && lastRevisionElementId) {
       const revisionResult = revisionResults[lastRevisionElementId]
@@ -342,7 +351,7 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
     } else {
       console.log(`No revision element found before index ${index}`)
     }
-    
+
     return false
   }
 
@@ -356,17 +365,17 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
         </div>
       )
     }
-    
+
     // Обработка quiz элементов
     if ('type' in element && element.type === 'quiz') {
       const quiz = element as QuizElement
-      
+
       // Проверяем, является ли этот конкретный экземпляр элемента частью активной revision chain
       const isInRevisionChain = isElementInActiveRevisionChain(quiz.element_id, index)
-      
+
       // Используем revisionCounter для принудительного пересоздания компонента из цепочки Revision
       const revisionKey = revisionCounter[quiz.element_id] || 0
-      
+
       // Если элемент из цепочки Revision:
       // - Если revisionCounter увеличился (новый экземпляр в revision chain), используем пустое состояние
       // - Если состояние уже есть (пользователь ответил), используем его для показа feedback
@@ -387,15 +396,15 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
         // Для элементов не в revision chain, используем обычное состояние
         quizState = quizStates[quiz.element_id] || {}
       }
-      
+
       // Используем индекс для создания уникального ключа, чтобы избежать дублирования
       const elementKey = `${quiz.element_id}-${revisionKey}-${index}`
-      
+
       // Логируем для отладки
       console.log(`QuizView rendering: element_id=${quiz.element_id}, index=${index}, revisionKey=${revisionKey}, isInRevisionChain=${isInRevisionChain}`)
       console.log(`QuizView quizState:`, quizState)
       console.log(`QuizView quizStates[${quiz.element_id}]:`, quizStates[quiz.element_id])
-      
+
       return (
         <div key={elementKey} className="mb-3 flex flex-col justify-start px-2">
           <QuizView
@@ -411,17 +420,17 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
         </div>
       )
     }
-    
+
     // Обработка input элементов
     if ('type' in element && element.type === 'input') {
       const input = element as InputElement
-      
+
       // Проверяем, является ли этот конкретный экземпляр элемента частью активной revision chain
       const isInRevisionChain = isElementInActiveRevisionChain(input.element_id, index)
-      
+
       // Используем revisionCounter для принудительного пересоздания компонента из цепочки Revision
       const revisionKey = revisionCounter[input.element_id] || 0
-      
+
       // Если элемент из цепочки Revision:
       // - Если состояние уже есть (пользователь ответил), используем его для показа feedback
       // - Иначе используем пустой объект (элемент еще не был пройден в этом revision chain)
@@ -436,7 +445,7 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
       } else {
         inputState = inputStates[input.element_id] || {}
       }
-      
+
       // Используем индекс для создания уникального ключа
       const elementKey = `${input.element_id}-${revisionKey}-${index}`
       return (
@@ -454,17 +463,17 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
         </div>
       )
     }
-    
+
     // Обработка question элементов
     if ('type' in element && element.type === 'question') {
       const question = element as QuestionElement
-      
+
       // Проверяем, является ли этот конкретный экземпляр элемента частью активной revision chain
       const isInRevisionChain = isElementInActiveRevisionChain(question.element_id, index)
-      
+
       // Используем revisionCounter для принудительного пересоздания компонента из цепочки Revision
       const revisionKey = revisionCounter[question.element_id] || 0
-      
+
       // Если элемент из цепочки Revision:
       // - Если состояние уже есть (пользователь ответил), используем его для показа feedback
       // - Иначе используем пустой объект (элемент еще не был пройден в этом revision chain)
@@ -479,7 +488,7 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
       } else {
         questionState = questionStates[question.element_id] || {}
       }
-      
+
       // Используем индекс для создания уникального ключа
       const elementKey = `${question.element_id}-${revisionKey}-${index}`
       return (
@@ -496,17 +505,17 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
         </div>
       )
     }
-    
+
     // Обработка multi_choice элементов
     if ('type' in element && element.type === 'multi_choice') {
       const multiChoice = element as MultiChoiceElement
-      
+
       // Проверяем, является ли этот конкретный экземпляр элемента частью активной revision chain
       const isInRevisionChain = isElementInActiveRevisionChain(multiChoice.element_id, index)
-      
+
       // Используем revisionCounter для принудительного пересоздания компонента из цепочки Revision
       const revisionKey = revisionCounter[multiChoice.element_id] || 0
-      
+
       // Если элемент из цепочки Revision:
       // - Если состояние уже есть (пользователь ответил), используем его для показа feedback
       // - Иначе используем пустой объект (элемент еще не был пройден в этом revision chain)
@@ -521,7 +530,7 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
       } else {
         multiChoiceState = multiChoiceStates[multiChoice.element_id] || {}
       }
-      
+
       // Используем индекс для создания уникального ключа
       const elementKey = `${multiChoice.element_id}-${revisionKey}-${index}`
       return (
@@ -541,14 +550,14 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
         </div>
       )
     }
-    
+
     // Обработка test элементов
     if ('type' in element && element.type === 'test') {
       const test = element as TestElement
       console.log(`Rendering test element:`, test)
       const testResult = testResults[test.element_id]
       const isLoading = testLoading[test.element_id]
-      
+
       return (
         <div key={test.element_id || index} className="mb-3 flex flex-col justify-start px-2">
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-4 shadow-sm">
@@ -560,7 +569,7 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
                 </h3>
               </div>
             </div>
-            
+
             {isLoading ? (
               <div className="text-center py-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
@@ -571,22 +580,21 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
                 <div className="text-gray-800 text-base leading-relaxed mb-3">
                   <ReactMarkdown
                     components={{
-                      p: ({node, ...props}) => <p className="mb-2" {...props} />,
-                      strong: ({node, ...props}) => <strong className="font-bold text-blue-900" {...props} />,
-                      em: ({node, ...props}) => <em className="italic" {...props} />,
+                      p: ({ node, ...props }) => <p className="mb-2" {...props} />,
+                      strong: ({ node, ...props }) => <strong className="font-bold text-blue-900" {...props} />,
+                      em: ({ node, ...props }) => <em className="italic" {...props} />,
                     }}
                   >
                     {testResult.result_text}
                   </ReactMarkdown>
                 </div>
-                
-                <div className={`mt-4 p-3 rounded-lg border-2 ${
-                  testResult.error_percentage === 0
+
+                <div className={`mt-4 p-3 rounded-lg border-2 ${testResult.error_percentage === 0
                     ? 'bg-green-50 border-green-200 text-green-800'
                     : testResult.error_percentage <= 33
-                    ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
-                    : 'bg-red-50 border-red-200 text-red-800'
-                }`}>
+                      ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
+                      : 'bg-red-50 border-red-200 text-red-800'
+                  }`}>
                   <p className="font-medium">{testResult.feedback_message}</p>
                 </div>
               </>
@@ -599,14 +607,14 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
         </div>
       )
     }
-    
+
     // Обработка revision элементов
     if ('type' in element && element.type === 'revision') {
       const revision = element as RevisionElement
       console.log(`Rendering revision element:`, revision)
       const revisionResult = revisionResults[revision.element_id]
       const isLoading = revisionLoading[revision.element_id]
-      
+
       return (
         <div key={revision.element_id || index} className="mb-3 flex flex-col justify-start px-2">
           <RevisionView
@@ -622,7 +630,7 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
         </div>
       )
     }
-    
+
     // Обработка end элементов
     if ('type' in element && element.type === 'end') {
       const end = element as { element_id: string; type: 'end'; text?: string }
@@ -642,9 +650,9 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
               <div className="text-gray-800 text-base leading-relaxed">
                 <ReactMarkdown
                   components={{
-                    p: ({node, ...props}) => <p className="mb-2" {...props} />,
-                    strong: ({node, ...props}) => <strong className="font-bold text-green-900" {...props} />,
-                    em: ({node, ...props}) => <em className="italic" {...props} />,
+                    p: ({ node, ...props }) => <p className="mb-2" {...props} />,
+                    strong: ({ node, ...props }) => <strong className="font-bold text-green-900" {...props} />,
+                    em: ({ node, ...props }) => <em className="italic" {...props} />,
                   }}
                 >
                   {end.text}
@@ -663,7 +671,7 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
         </div>
       )
     }
-    
+
     // Обработка dialog элементов
     if ('type' in element && element.type === 'dialog') {
       const dialog = element as DialogElement
@@ -687,7 +695,7 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
         </div>
       )
     }
-    
+
     // Обработка нереализованных элементов
     if ('type' in element && element.type === 'unimplemented') {
       const unimplemented = element as UnimplementedElement
@@ -714,8 +722,8 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
             <div className="text-gray-800 text-base leading-relaxed mb-3">
               <ReactMarkdown
                 components={{
-                  p: ({node, ...props}) => <p className="mb-2" {...props} />,
-                  a: ({node, ...props}) => (
+                  p: ({ node, ...props }) => <p className="mb-2" {...props} />,
+                  a: ({ node, ...props }) => (
                     <a
                       {...props}
                       className="text-blue-600 underline hover:text-blue-800"
@@ -740,6 +748,18 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
       )
     }
 
+    // Обработка system элементов
+    if ('type' in element && element.type === 'system') {
+      const sys = element as SystemMessageElement
+      return (
+        <div key={sys.element_id} className="my-2 flex items-center gap-2 px-2">
+          <div className="flex-1 h-px bg-gray-200" />
+          <span className="text-xs text-gray-400 whitespace-nowrap">{sys.text}</span>
+          <div className="flex-1 h-px bg-gray-200" />
+        </div>
+      )
+    }
+
     // Обработка message элементов
     const message = element as MessageElement
     return renderMessage(message, index)
@@ -750,16 +770,16 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
     console.log(`Message options:`, message.options)
     console.log(`Message media:`, message.media)
     console.log(`Message link_preview:`, message.link_preview)
-    
+
     const processedText = processLinks(message.text, message.link_preview, message.parse_mode)
-    
+
     if (message.parse_mode === 'HTML') {
       // Санитизация HTML с поддержкой tg-spoiler
       let sanitizedHTML = DOMPurify.sanitize(processedText, {
         ALLOWED_TAGS: ['b', 'i', 'u', 'code', 'pre', 'p', 'br', 'a', 'strong', 'em', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'tg-spoiler'],
         ALLOWED_ATTR: ['href', 'target', 'rel']
       })
-      
+
       // Преобразуем tg-spoiler в details/summary для браузера
       sanitizedHTML = sanitizedHTML.replace(
         /<tg-spoiler>/gi,
@@ -769,7 +789,7 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
         /<\/tg-spoiler>/gi,
         '</div></details>'
       )
-      
+
       return (
         <div
           key={message.element_id || index}
@@ -777,9 +797,9 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
         >
           {/* Медиа файлы */}
           {message.media && message.media.length > 0 && renderMedia(message.media)}
-          <div className="max-w-[85%] bg-blue-500 text-white rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm break-words">
+          <div className="max-w-[85%] bg-brand-green-light text-gray-800 rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm break-words">
             <div
-              className="text-white text-[15px] leading-relaxed whitespace-pre-wrap"
+              className="text-gray-800 text-[15px] leading-relaxed whitespace-pre-wrap"
               dangerouslySetInnerHTML={{ __html: sanitizedHTML }}
             />
           </div>
@@ -793,7 +813,7 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
                     console.log("Inline button clicked:", option)
                     onInlineButtonClick?.(option)
                   }}
-                  className="px-4 py-2 bg-white border border-blue-500 text-blue-600 rounded-lg hover:bg-blue-50 active:bg-blue-100 text-sm font-medium transition-colors shadow-sm"
+                  className="px-4 py-2 bg-white border border-brand-green text-brand-green rounded-lg hover:bg-brand-green-light active:bg-brand-green-light text-sm font-medium transition-colors shadow-sm"
                 >
                   {option.text}
                 </button>
@@ -811,29 +831,29 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
         >
           {/* Медиа файлы */}
           {message.media && message.media.length > 0 && renderMedia(message.media)}
-          <div className="max-w-[85%] bg-blue-500 text-white rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm break-words">
-            <div className="text-white text-[15px] leading-relaxed">
+          <div className="max-w-[85%] bg-brand-green-light text-gray-800 rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm break-words">
+            <div className="text-gray-800 text-[15px] leading-relaxed">
               <ReactMarkdown
                 components={{
-                  p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
-                  h1: ({node, ...props}) => <h1 className="text-xl font-bold mb-2" {...props} />,
-                  h2: ({node, ...props}) => <h2 className="text-lg font-bold mb-2" {...props} />,
-                  h3: ({node, ...props}) => <h3 className="text-base font-bold mb-2" {...props} />,
-                  ul: ({node, ...props}) => <ul className="list-disc list-inside mb-2" {...props} />,
-                  ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-2" {...props} />,
-                  li: ({node, ...props}) => <li className="mb-1" {...props} />,
-                  code: ({node, ...props}) => <code className="bg-blue-600 px-1 py-0.5 rounded text-sm break-all" {...props} />,
-                  pre: ({node, ...props}) => <pre className="bg-blue-600 p-2 rounded mb-2 whitespace-pre-wrap break-words text-sm" {...props} />,
-                  a: ({node, ...props}) => (
+                  p: ({ node, ...props }) => <p className="mb-2 last:mb-0 text-gray-800" {...props} />,
+                  h1: ({ node, ...props }) => <h1 className="text-xl font-bold mb-2 text-gray-900" {...props} />,
+                  h2: ({ node, ...props }) => <h2 className="text-lg font-bold mb-2 text-gray-900" {...props} />,
+                  h3: ({ node, ...props }) => <h3 className="text-base font-bold mb-2 text-gray-900" {...props} />,
+                  ul: ({ node, ...props }) => <ul className="list-disc list-inside mb-2 text-gray-800" {...props} />,
+                  ol: ({ node, ...props }) => <ol className="list-decimal list-inside mb-2 text-gray-800" {...props} />,
+                  li: ({ node, ...props }) => <li className="mb-1 text-gray-800" {...props} />,
+                  code: ({ node, ...props }) => <code className="bg-green-100 px-1 py-0.5 rounded text-sm break-all text-gray-900" {...props} />,
+                  pre: ({ node, ...props }) => <pre className="bg-green-100 p-2 rounded mb-2 whitespace-pre-wrap break-words text-sm text-gray-900" {...props} />,
+                  a: ({ node, ...props }) => (
                     <a
                       {...props}
-                      className="text-blue-200 underline hover:text-blue-100"
+                      className="text-brand-green underline hover:text-brand-green-hover"
                       target="_blank"
                       rel="noopener noreferrer"
                     />
                   ),
                 }}
-              >{telegramToCommonMark(processedText)}</ReactMarkdown>
+              >{telegramToCommonMark(processedText).replace(/\n/g, '  \n')}</ReactMarkdown>
             </div>
           </div>
           {/* Inline кнопки */}
@@ -846,7 +866,7 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
                     console.log("Inline button clicked:", option)
                     onInlineButtonClick?.(option)
                   }}
-                  className="px-4 py-2 bg-white border border-blue-500 text-blue-600 rounded-lg hover:bg-blue-50 active:bg-blue-100 text-sm font-medium transition-colors shadow-sm"
+                  className="px-4 py-2 bg-white border border-brand-green text-brand-green rounded-lg hover:bg-brand-green-light active:bg-brand-green-light text-sm font-medium transition-colors shadow-sm"
                 >
                   {option.text}
                 </button>
@@ -859,22 +879,33 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto py-4 min-h-0">
-        {messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center text-gray-500">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-400 mx-auto mb-4"></div>
-              <p>Загрузка сообщений...</p>
+    <>
+      <div className="flex flex-col h-full">
+        <div className="flex-1 overflow-y-auto py-4 min-h-0">
+          {messages.length === 0 ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center text-gray-500">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-400 mx-auto mb-4"></div>
+                <p>Загрузка сообщений...</p>
+              </div>
             </div>
-          </div>
-        ) : (
-          <>
-            {messages.map((element, index) => renderElement(element, index))}
-            <div ref={messagesEndRef} />
-          </>
-        )}
+          ) : (
+            <>
+              {messages.map((element, index) => renderElement(element, index))}
+              <div ref={messagesEndRef} />
+            </>
+          )}
+        </div>
       </div>
-    </div>
+
+      {lightbox && (
+        <ImageLightbox
+          urls={lightbox.urls}
+          index={lightbox.index}
+          onClose={() => setLightbox(null)}
+          onNavigate={(i) => setLightbox({ urls: lightbox.urls, index: i })}
+        />
+      )}
+    </>
   )
 }

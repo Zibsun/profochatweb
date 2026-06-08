@@ -25,76 +25,90 @@ interface DialogViewProps {
 }
 
 export default function DialogView({ element, courseId, onNext }: DialogViewProps) {
+  const storageKey = `dialog_state_${courseId}_${element.element_id}`
   const [messages, setMessages] = useState<Array<{role: string, content: string}>>([])
   const [inputValue, setInputValue] = useState('')
   const [loading, setLoading] = useState(false)
   const [typing, setTyping] = useState(false)
-  const [dialogCompleted, setDialogCompleted] = useState(false) // Флаг завершения диалога
+  const [dialogCompleted, setDialogCompleted] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
   const autoStartTriggered = useRef(false)
-  // Инициализация только при первой загрузке элемента
   const initializedRef = useRef<string | null>(null)
-  
+
+  // Сохраняем состояние диалога в localStorage при каждом изменении
+  useEffect(() => {
+    if (messages.length === 0) return
+    try {
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify({ messages, completed: dialogCompleted })
+      )
+    } catch {}
+  }, [messages, dialogCompleted, storageKey])
+
   useEffect(() => {
     // Инициализируем только если это новый элемент
     if (initializedRef.current === element.element_id) {
-      console.log('DialogView: Element already initialized, skipping', { elementId: element.element_id })
       return
     }
-    
-    console.log('DialogView: useEffect triggered - INITIALIZATION', { 
-      elementId: element.element_id,
-      elementText: element.text,
-      elementKeys: Object.keys(element),
-      fullElement: element
-    })
-    
-    // Инициализация: добавляем начальное сообщение
-    // Если text пустой, не добавляем начальное сообщение или используем placeholder
-    const initialMessages: Array<{role: string, content: string}> = []
-    
-    if (element.text && element.text.trim()) {
-      initialMessages.push({ role: "assistant", content: element.text })
+
+    // Пробуем восстановить из localStorage
+    let restoredFromStorage = false
+    try {
+      const saved = localStorage.getItem(storageKey)
+      if (saved) {
+        const { messages: savedMessages, completed } = JSON.parse(saved)
+        if (savedMessages && savedMessages.length > 0) {
+          setMessages(savedMessages)
+          setDialogCompleted(completed || false)
+          restoredFromStorage = true
+        }
+      }
+    } catch {}
+
+    if (!restoredFromStorage) {
+      // Свежая инициализация
+      const initialMessages: Array<{role: string, content: string}> = []
+
+      if (element.text && element.text.trim()) {
+        initialMessages.push({ role: 'assistant', content: element.text })
+      }
+
+      if (element.conversation && element.conversation.length > 0) {
+        const history = element.conversation.filter(msg => msg.role !== 'system')
+        initialMessages.push(...history)
+      }
+
+      if (initialMessages.length === 0) {
+        initialMessages.push({ role: 'assistant', content: 'Начните диалог...' })
+      }
+
+      setMessages(initialMessages)
+      setDialogCompleted(false)
     }
-    
-    // Добавляем существующую историю если есть
-    if (element.conversation && element.conversation.length > 0) {
-      // Пропускаем system message, добавляем остальные
-      const history = element.conversation.filter(msg => msg.role !== "system")
-      initialMessages.push(...history)
-    }
-    
-    // Если нет ни начального сообщения, ни истории, добавляем placeholder
-    if (initialMessages.length === 0) {
-      initialMessages.push({ role: "assistant", content: "Начните диалог..." })
-    }
-    
-    console.log('DialogView: Initializing messages', { 
-      elementId: element.element_id, 
-      initialMessagesCount: initialMessages.length,
-      conversationLength: element.conversation?.length || 0,
-      initialMessages: initialMessages,
-      elementText: element.text
-    })
-    
-             setMessages(initialMessages)
-             initializedRef.current = element.element_id
-             autoStartTriggered.current = false // Сбрасываем флаг при смене элемента
-             setDialogCompleted(false) // Сбрасываем флаг завершения при смене элемента
-    
-    // Auto-start: автоматически отправляем первое сообщение
-    if (element.auto_start && !autoStartTriggered.current) {
+
+    initializedRef.current = element.element_id
+    autoStartTriggered.current = false
+
+    // Auto-start только для свежих диалогов
+    if (element.auto_start && !autoStartTriggered.current && !restoredFromStorage) {
       autoStartTriggered.current = true
-      // Небольшая задержка для отображения начального сообщения
       setTimeout(() => {
         handleAutoStart()
       }, 500)
     }
-  }, [element.element_id]) // Зависимость только от element_id, чтобы не перезапускать при каждом обновлении
+  }, [element.element_id]) // eslint-disable-line react-hooks/exhaustive-deps
   
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  useEffect(() => {
+    if (!dialogCompleted) {
+      inputRef.current?.focus()
+    }
+  }, [dialogCompleted])
   
   const handleAutoStart = async () => {
     setLoading(true)
@@ -293,15 +307,16 @@ export default function DialogView({ element, courseId, onNext }: DialogViewProp
                   <div
                     className={`max-w-[70%] p-3 rounded-lg break-words overflow-wrap-anywhere ${
                       message.role === 'user'
-                        ? 'bg-blue-600 text-white rounded-br-sm'
-                        : 'bg-gray-200 text-gray-800 rounded-bl-sm'
+                        ? 'text-white rounded-br-sm'
+                        : 'bg-gray-100 text-gray-800 rounded-bl-sm'
                     }`}
-                    style={{ 
-                      minWidth: '100px', 
+                    style={{
+                      minWidth: '100px',
                       display: 'block',
                       wordWrap: 'break-word',
                       overflowWrap: 'break-word',
-                      wordBreak: 'break-word'
+                      wordBreak: 'break-word',
+                      ...(message.role === 'user' ? { backgroundColor: '#118b64' } : {})
                     }}
                   >
                     {message.role === 'assistant' ? (
@@ -315,8 +330,8 @@ export default function DialogView({ element, courseId, onNext }: DialogViewProp
                             ul: ({node, ...props}) => <ul className="list-disc list-inside mb-2 text-gray-800 break-words" style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }} {...props} />,
                             ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-2 text-gray-800 break-words" style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }} {...props} />,
                             li: ({node, ...props}) => <li className="mb-1 text-gray-800 break-words" style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }} {...props} />,
-                            code: ({node, ...props}) => <code className="bg-gray-300 px-1 py-0.5 rounded text-xs text-gray-900 break-all" {...props} />,
-                            pre: ({node, ...props}) => <pre className="bg-gray-300 p-2 rounded mb-2 whitespace-pre-wrap break-words text-xs text-gray-900" {...props} />,
+                            code: ({node, ...props}) => <code className="bg-gray-200 px-1 py-0.5 rounded text-xs text-gray-900 break-all" {...props} />,
+                            pre: ({node, ...props}) => <pre className="bg-gray-200 p-2 rounded mb-2 whitespace-pre-wrap break-words text-xs text-gray-900" {...props} />,
                             a: ({node, ...props}) => (
                               <a 
                                 {...props} 
@@ -343,8 +358,8 @@ export default function DialogView({ element, courseId, onNext }: DialogViewProp
         )}
         {typing && (
           <div className="flex justify-start">
-            <div className="bg-gray-200 p-3 rounded-lg rounded-bl-sm">
-              <span className="animate-pulse text-gray-600">Печатает...</span>
+            <div className="bg-gray-100 p-3 rounded-lg rounded-bl-sm">
+              <span className="animate-pulse text-gray-600">Генерирую...</span>
             </div>
           </div>
         )}
@@ -354,6 +369,7 @@ export default function DialogView({ element, courseId, onNext }: DialogViewProp
         <div className="border-t border-gray-300 p-4 bg-white">
           <div className="flex gap-2">
             <textarea
+              ref={inputRef}
               value={inputValue}
               onChange={(e) => {
                 console.log('DialogView: Input changed', { value: e.target.value })
@@ -371,7 +387,7 @@ export default function DialogView({ element, courseId, onNext }: DialogViewProp
               placeholder="Введите сообщение..."
               disabled={loading}
               rows={1}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 bg-white placeholder-gray-400 resize-none"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#118b64] focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 bg-white placeholder-gray-400 resize-none"
               style={{ color: '#111827' }}
             />
             <button
@@ -380,7 +396,10 @@ export default function DialogView({ element, courseId, onNext }: DialogViewProp
                 handleSend()
               }}
               disabled={loading || !inputValue.trim()}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+              className="px-6 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+              style={{ backgroundColor: '#118b64' }}
+              onMouseEnter={e => { if (!loading && inputValue.trim()) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#0d6e4f' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#118b64' }}
             >
               Отправить
             </button>

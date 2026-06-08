@@ -44,7 +44,12 @@ fi
 
 # Запуск Docker Compose
 echo "🐳 Запуск Docker Compose..."
-$DOCKER_COMPOSE_CMD up -d
+COMPOSE_FILES="-f docker-compose.yml"
+if [ -f "docker-compose.local.yml" ]; then
+    COMPOSE_FILES="$COMPOSE_FILES -f docker-compose.local.yml"
+    echo "📋 Найден docker-compose.local.yml — локальные переопределения применены"
+fi
+$DOCKER_COMPOSE_CMD $COMPOSE_FILES up -d
 
 echo ""
 echo "⏳ Ожидание запуска сервисов..."

@@ -90,13 +90,13 @@ def _prepare_params(
     """
     # Маппинг нестандартных названий моделей
     model_mapping = {
-        "gpt-4.1": "gpt-4-turbo",  # gpt-4.1 -> gpt-4-turbo
+        # gpt-4.1 -> gpt-4-turbo (было так зачем-то)
         "gpt-4": "gpt-4-turbo",     # По умолчанию используем turbo версию
     }
     
     # Если модель не указана, используем дефолтную
     if not model:
-        model = "gpt-4-turbo"
+        model = "gpt-4.1"
     
     # Применяем маппинг если нужно
     model = model_mapping.get(model, model)

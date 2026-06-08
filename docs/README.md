@@ -28,3 +28,8 @@
 - [Потоки данных](how-it-works/data-flow.md) — frontend ↔ backend ↔ DB
 - [Страницы](how-it-works/pages/README.md) — техническое описание страниц
 - [Процессы](how-it-works/workflows/README.md) — технические процессы
+
+## Развертывание (Deploy)
+
+- [Локальное развертывание](deploy/local-setup.md) — руководство по работе с локальной средой (докер, порты, переменные окружения)
+- [Продакшен-развертывание](deploy/production-deploy.md) — инструкция по деплою и обновлению боевого сервера (docker-compose)

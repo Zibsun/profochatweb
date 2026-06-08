@@ -3,11 +3,17 @@ import { ConditionalLayout } from '@/components/layout/ConditionalLayout'
 import './globals.css'
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://profochat.scrumtrek.ru'),
   title: 'Кактус.Нота — тренажёры для сотрудников',
-  description: 'Гибридные асинхронные курсы: ИИ-адаптация к каждому сотруднику, но без отвлечений от темы, типичных для ИИ-ботов.',
+  description: 'Гибридные асинхронные курсы: адаптация к каждому сотруднику с помощью ИИ, но без отвлечений от темы.',
   icons: {
-    icon: '/favicon.png',
+    icon: '/assets/favicon.png',
   },
+  openGraph: {
+    title: 'Кактус.Нота — тренажёры для сотрудников',
+    description: 'Гибридные асинхронные курсы: адаптация к каждому сотруднику с помощью ИИ, но без отвлечений от темы.',
+    images: [{ url: '/assets/preview-green.png' }], // Для превью в соцсетях
+  }
 }
 
 export default function RootLayout({

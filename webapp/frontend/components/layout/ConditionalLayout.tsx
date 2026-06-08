@@ -15,7 +15,10 @@ export function ConditionalLayout({ children }: { children: React.ReactNode }) {
   // Course pages are accessible without auth (secret link access)
   const isCoursePage = pathname?.startsWith('/course')
 
-  if (isAuthPage || isRootPage || isCoursePage) {
+  // Static resources folders (prevent 404s of assets from rendering the sidebar layout)
+  const isResourcePage = pathname?.startsWith('/assets') || pathname?.startsWith('/public')
+
+  if (isAuthPage || isRootPage || isCoursePage || isResourcePage) {
     return <>{children}</>
   }
 
