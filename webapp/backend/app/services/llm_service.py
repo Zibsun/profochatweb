@@ -64,11 +64,11 @@ def _prepare_conversation_and_prompt(messages: list[dict]) -> tuple[list[dict], 
     if conversation and conversation[-1]["role"] == "user":
         new_prompt = conversation[-1]["content"]
         conversation = conversation[:-1]
-        logger.info(f"_prepare_conversation_and_prompt: Extracted user prompt, conversation length={len(conversation)}, new_prompt length={len(new_prompt)}")
+        ## logger.info(f"_prepare_conversation_and_prompt: Extracted user prompt, conversation length={len(conversation)}, new_prompt length={len(new_prompt)}")
     else:
         logger.warning(f"_prepare_conversation_and_prompt: Last message is not user, role={conversation[-1].get('role') if conversation else 'none'}")
     
-    logger.info(f"_prepare_conversation_and_prompt: Final conversation={[{'role': m.get('role'), 'content_length': len(m.get('content', ''))} for m in conversation]}")
+    ## logger.info(f"_prepare_conversation_and_prompt: Final conversation={[{'role': m.get('role'), 'content_length': len(m.get('content', ''))} for m in conversation]}")
     
     return conversation, new_prompt
 

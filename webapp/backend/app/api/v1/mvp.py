@@ -3482,7 +3482,7 @@ def send_dialog_message(
         # Получаем conversation из элемента
         conversation = current_element.get("conversation", [])
         
-        logger.info(f"send_dialog_message: Current conversation length={len(conversation)}, conversation={conversation}")
+        ## logger.info(f"send_dialog_message: Current conversation length={len(conversation)}, conversation={conversation}")
         
         # Инициализируем промпт если conversation пуст
         if not conversation:
@@ -3555,7 +3555,7 @@ def send_dialog_message(
         if "{STOP}" in reply:
             reply = reply.replace("{STOP}", "").strip()
             stop_detected = True
-            logger.info(f"send_dialog_message: Detected {{STOP}} marker, original_reply={original_reply[:200]}")
+            ## logger.info(f"send_dialog_message: Detected {{STOP}} marker, original_reply={original_reply[:200]}")
 
         logger.info(f"send_dialog_message: reply_length={len(reply)}, stop_detected={stop_detected}, reply_preview={reply[:100] if reply else 'EMPTY'}")
         
