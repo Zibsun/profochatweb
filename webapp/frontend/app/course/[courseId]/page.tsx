@@ -350,8 +350,15 @@ export default function CoursePage() {
       // Восстанавливаем или инициализируем историю
       if (currentElement) {
         if (startElementId) {
-          // При переходе по ссылке с ?element= добавляем системное
-          // сообщение-разделитель перед новым элементом
+          // При переходе по ссылке с ?element= сбрасываем localStorage
+          // для dialog-элементов, чтобы ранее пройденные диалоги
+          // можно было выполнить заново
+          const dialogPrefix = `dialog_state_${resolvedCourseId}_`
+          Object.keys(localStorage)
+            .filter(key => key.startsWith(dialogPrefix))
+            .forEach(key => localStorage.removeItem(key))
+
+          // Добавляем системное сообщение-разделитель перед новым элементом
           const systemMsg: SystemMessageElement = {
             element_id: '__system_jump__',
             type: 'system',
