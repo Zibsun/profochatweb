@@ -304,13 +304,19 @@ export default function ChatView({ messages, courseId, onInlineButtonClick, onQu
       return text
     }
 
-    // Для Markdown: преобразуем обычные URL в markdown ссылки
-    // Регулярное выражение для поиска URL (http/https)
-    const urlRegex = /(https?:\/\/[^\s]+)/g
-    return text.replace(urlRegex, (url) => {
-      // Если URL уже в формате markdown ссылки [text](url), не трогаем
-      // Иначе преобразуем в [url](url)
-      return `[${url}](${url})`
+    // Для Markdown: преобразуем только «голые» URL в markdown ссылки.
+    // Используем единый regex, который матчит:
+    //   1) markdown-ссылки [text](url) — оставляем как есть (группа 1)
+    //   2) голые URL https://... — оборачиваем в [url](url)
+    // Порядок альтернатив важен: markdown-ссылка матчится первой.
+    const combinedRegex = /(\[[^\]]*\]\([^)]*\))|(https?:\/\/[^\s\])]+)/g
+    return text.replace(combinedRegex, (match, markdownLink, bareUrl) => {
+      if (markdownLink) {
+        // Уже оформлена как markdown-ссылка — не трогаем
+        return markdownLink
+      }
+      // Голый URL — оборачиваем
+      return `[${bareUrl}](${bareUrl})`
     })
   }
 
