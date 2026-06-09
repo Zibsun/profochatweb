@@ -172,11 +172,11 @@ def generate_chat_response(
     """
     # Если модель не указана, используем дефолтную
     if not model:
-        model = "gpt-4-turbo"
+        model = "gpt-4.1"
     
     # Маппинг нестандартных названий моделей
+    # gpt-4.1 НЕ мапим — это реальная модель, отправляем как есть
     model_mapping = {
-        "gpt-4.1": "gpt-4-turbo",
         "gpt-4": "gpt-4-turbo",
     }
     model = model_mapping.get(model, model)
