@@ -63,7 +63,8 @@ else
     tar cf - -T "$FILES_LIST" | ssh -p "$PORT" "$USER_HOST" "cd $DEST_DIR && tar xvf -"
     
     if [ $? -eq 0 ]; then
-        echo "✅ Деплой (по списку из $FILES_LIST) успешно завершен!"
+        echo "✅ Деплой (по списку из $FILES_LIST) успешно завершен! На сервере не забудь перезагрузить докер:"
+        echo "cd /var/www/profochatweb && docker compose build backend && docker compose up -d backend"
     else
         echo "❌ Ошибка при деплое."
         exit 1
